@@ -48,6 +48,7 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
+.ruff_cache/
 
 # Translations
 *.mo
@@ -133,7 +134,5 @@ dmypy.json
 .DS_Store
 Thumbs.db
 
-# Project specific
-.helix/
-config.local.yaml
+# Local environment variants
 .env.local
