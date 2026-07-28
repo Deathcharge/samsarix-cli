@@ -146,7 +146,7 @@ No baseline claim is recorded as passing when it did not.
 - [x] Add CI, changelog, security policy, contribution guide, and accurate README.
 - [x] Apply the Samsarix identity and working company contacts.
 - [x] Replace conflicting terms with Apache-2.0, `NOTICE`, and a brand policy.
-- [ ] Obtain green GitHub-hosted Python 3.11-3.13 CI on the pushed branch.
+- [x] Obtain green GitHub-hosted Python 3.11-3.13 CI on the pushed branch.
 - [ ] Reserve/publish `samsarix-cli` through an owner-controlled PyPI organization/account.
 - [ ] Rename the legacy GitHub repository if desired and update canonical URLs.
 
@@ -190,21 +190,25 @@ The `1.1.0rc2` rebrand was verified on Windows with Python 3.11.9:
 | live generated `/health` request | HTTP 200; `{"status":"ok"}`; orderly application shutdown |
 | pip-audit OSV against fresh wheel environment | exit 0; no known vulnerabilities |
 | canonical Apache text comparison | exact normalized text and SHA-256 match with Apache's official file |
+| GitHub Actions Python 3.11, 3.12, 3.13 quality jobs | exit 0; format, lint, mypy, tests, and audits passed |
+| GitHub Actions package job | exit 0; build, Twine check, and installed-wheel smoke passed |
 
 The first dependency-audit attempt against pip-audit's PyPI backend ended before results when its TLS
 connection was reset (`WinError 10054`). The OSV retry succeeded; the network failure was not treated
-as a passing audit. Python 3.12/3.13 and GitHub-hosted CI were not available locally.
+as a passing audit. Python 3.12/3.13 were not available locally, so those versions were verified by
+GitHub-hosted CI. The first hosted run passed but warned that the pinned action versions used the
+deprecated Node 20 runtime; the workflow was then updated to the official Node 24-based major
+versions and rerun.
 
 ## Known risks and deferred work
 
-1. **External release evidence (P1):** GitHub-hosted Python 3.11-3.13 CI has not yet run for rc2.
-2. **Name control (P1):** a PyPI 404 is evidence of current availability, not ownership; Samsarix LLC
+1. **Name control (P1):** a PyPI 404 is evidence of current availability, not ownership; Samsarix LLC
    must reserve or publish the distribution before another party does.
-3. **Canonical repository identity (P2):** the remote URL still contains `helix-cli` and the GitHub
+2. **Canonical repository identity (P2):** the remote URL still contains `helix-cli` and the GitHub
    owner is `Deathcharge`; the owner may rename/transfer it and then update package URLs.
-4. **Framework depth (P2):** expand installed smoke checks beyond FastAPI as maintenance value grows.
-5. **Template evolution (P2):** design explicit diff/merge semantics before offering upgrades.
-6. **Legal review (owner-controlled):** counsel should confirm title/provenance and desired trademark
+3. **Framework depth (P2):** expand installed smoke checks beyond FastAPI as maintenance value grows.
+4. **Template evolution (P2):** design explicit diff/merge semantics before offering upgrades.
+5. **Legal review (owner-controlled):** counsel should confirm title/provenance and desired trademark
    protection before a major commercial launch. This does not block an honest Apache-2.0 release.
 
 Framework dependency ranges are bounded but not locked in generated projects. Owners need a lock and
@@ -224,7 +228,7 @@ reviewed template maintenance are plausible without making the open core account
 
 ## Release disposition
 
-**Release candidate with named external gates.** The local product has no known actionable P0. After
-rc2 verification and push, the remaining gates are hosted multi-version CI and owner-controlled PyPI
+**Release candidate with one publication gate.** The local product has no known actionable P0, and
+hosted multi-version quality/package CI passes. The remaining release gate is owner-controlled PyPI
 name reservation/publication. A GitHub repository rename and formal legal/trademark review are useful
 owner actions but do not require more local product code.

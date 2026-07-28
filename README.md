@@ -5,8 +5,9 @@ understandable Python application starter. It creates a new directory from one o
 templates, can initialize Git, and records enough metadata for `samsarix check` to detect a damaged
 scaffold.
 
-The project is a beta release candidate. The local CLI, distributions, and generated FastAPI journey
-are verified; public PyPI publication and GitHub-hosted CI remain external release steps.
+The project is a beta release candidate. The local CLI, distributions, generated FastAPI journey,
+and GitHub-hosted Python 3.11-3.13 CI are verified; public PyPI publication remains an external
+release step.
 
 ## What it creates
 
