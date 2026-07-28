@@ -7,10 +7,10 @@ from pathlib import Path
 
 import pytest
 
-import helix_cli.scaffold as scaffold_module
-from helix_cli.scaffold import ScaffoldError, scaffold_project, validate_project_name
-from helix_cli.templates import TEMPLATE_NAMES, render_project
-from helix_cli.validation import check_project
+import samsarix_cli.scaffold as scaffold_module
+from samsarix_cli.scaffold import ScaffoldError, scaffold_project, validate_project_name
+from samsarix_cli.templates import TEMPLATE_NAMES, render_project
+from samsarix_cli.validation import check_project
 
 
 @pytest.mark.parametrize("template_name", TEMPLATE_NAMES)
@@ -32,7 +32,7 @@ def test_every_template_is_complete_valid_toml_and_valid_python(
     assert not result.git_initialized
     assert check_project(destination).is_valid
     assert "helix-collective" not in (destination / "pyproject.toml").read_text(encoding="utf-8")
-    assert "hosted Helix service" in (destination / "README.md").read_text(encoding="utf-8")
+    assert "hosted service" in (destination / "README.md").read_text(encoding="utf-8")
 
     python_files = sorted(destination.rglob("*.py"))
     assert python_files
@@ -50,7 +50,7 @@ def test_project_name_override_controls_distribution_and_module_names(tmp_path: 
         initialize_git=False,
     )
 
-    manifest = json.loads((destination / ".helix/project.json").read_text(encoding="utf-8"))
+    manifest = json.loads((destination / ".samsarix/project.json").read_text(encoding="utf-8"))
     assert result.project_name == "Useful_API"
     assert result.module_name == "useful_api"
     assert manifest["project_name"] == "Useful_API"
@@ -117,7 +117,7 @@ def test_partial_generation_is_cleaned_up(tmp_path: Path, monkeypatch: pytest.Mo
         )
 
     assert not destination.exists()
-    assert not list(tmp_path.glob(".broken.helix-*"))
+    assert not list(tmp_path.glob(".broken.samsarix-*"))
 
 
 def test_cancelled_generation_is_cleaned_up(
@@ -139,7 +139,7 @@ def test_cancelled_generation_is_cleaned_up(
         )
 
     assert not destination.exists()
-    assert not list(tmp_path.glob(".cancelled.helix-*"))
+    assert not list(tmp_path.glob(".cancelled.samsarix-*"))
 
 
 @pytest.mark.skipif(shutil.which("git") is None, reason="Git is not installed")

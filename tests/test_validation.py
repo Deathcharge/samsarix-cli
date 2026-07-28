@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from helix_cli.scaffold import scaffold_project
-from helix_cli.validation import check_project
+from samsarix_cli.scaffold import scaffold_project
+from samsarix_cli.validation import check_project
 
 
 def _project(tmp_path: Path) -> Path:
@@ -22,7 +22,7 @@ def _project(tmp_path: Path) -> Path:
 
 
 def _manifest(project: Path) -> tuple[Path, dict[str, object]]:
-    path = project / ".helix/project.json"
+    path = project / ".samsarix/project.json"
     return path, json.loads(path.read_text(encoding="utf-8"))
 
 
@@ -91,7 +91,7 @@ def test_metadata_symlinks_cannot_escape_the_project(tmp_path: Path) -> None:
     project = _project(tmp_path)
     external = tmp_path / "external.json"
     external.write_text("{}", encoding="utf-8")
-    manifest = project / ".helix/project.json"
+    manifest = project / ".samsarix/project.json"
     manifest.unlink()
     try:
         os.symlink(external, manifest)
@@ -178,9 +178,9 @@ def test_manifest_identity_fields_are_validated(tmp_path: Path) -> None:
     result = check_project(project)
 
     assert "manifest schema_version must be 1" in result.issues
-    assert "manifest generator must be 'helix-cli'" in result.issues
+    assert "manifest generator must be 'samsarix-cli'" in result.issues
     assert "manifest module_name must be 'validated_project'" in result.issues
-    assert "manifest template is not supported by this Helix CLI" in result.issues
+    assert "manifest template is not supported by this Samsarix CLI" in result.issues
 
 
 def test_manifest_project_name_type_and_value_are_validated(tmp_path: Path) -> None:

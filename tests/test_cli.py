@@ -8,8 +8,8 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from helix_cli import __version__
-from helix_cli.main import cli
+from samsarix_cli import __version__
+from samsarix_cli.main import cli
 
 
 def test_help_is_ascii_safe_and_describes_only_real_commands() -> None:
@@ -28,14 +28,14 @@ def test_version_uses_package_version() -> None:
     result = CliRunner().invoke(cli, ["--version"])
 
     assert result.exit_code == 0
-    assert result.output.strip() == f"helix, version {__version__}"
+    assert result.output.strip() == f"samsarix, version {__version__}"
 
 
 def test_python_module_entrypoint(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(sys, "argv", ["helix", "--version"])
+    monkeypatch.setattr(sys, "argv", ["samsarix", "--version"])
 
     with pytest.raises(SystemExit) as exit_info:
-        runpy.run_module("helix_cli", run_name="__main__")
+        runpy.run_module("samsarix_cli", run_name="__main__")
 
     assert exit_info.value.code == 0
 
@@ -86,7 +86,7 @@ def test_check_reports_missing_manifest_and_nonzero_json_status() -> None:
         machine = runner.invoke(cli, ["check", "ordinary-project", "--json"])
 
         assert human.exit_code == 1
-        assert "missing .helix/project.json manifest" in human.output
+        assert "missing .samsarix/project.json manifest" in human.output
         assert machine.exit_code == 1
         payload = json.loads(machine.output)
         assert payload["valid"] is False

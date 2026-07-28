@@ -1,8 +1,8 @@
 # Contributing
 
-Helix CLI favors a small, honest command surface and reviewed built-in templates. A contribution
+Samsarix CLI favors a small, honest command surface and reviewed built-in templates. A contribution
 should improve the complete `templates -> init -> check -> run` journey without introducing a
-runtime dependency on a private repository or hosted Helix service.
+runtime dependency on a private repository or hosted service.
 
 ## Setup
 
@@ -23,7 +23,7 @@ python -m pip install -e ".[dev]"
 ruff format --check .
 ruff check .
 mypy
-pytest --cov=helix_cli --cov-report=term-missing
+pytest --cov=samsarix_cli --cov-report=term-missing
 pip-audit --local --skip-editable
 python -m build
 python -m twine check dist/*
@@ -32,11 +32,11 @@ python -m twine check dist/*
 Run a real generated-project smoke check when changing a template:
 
 ```bash
-helix init smoke-project --template fastapi --no-git
-helix check smoke-project
+samsarix init smoke-project --template fastapi --no-git
+samsarix check smoke-project
 ```
 
-Use a disposable destination; `helix init` intentionally refuses to overwrite it on a later run.
+Use a disposable destination; `samsarix init` intentionally refuses to overwrite it on a later run.
 
 ## Contribution expectations
 
@@ -47,4 +47,6 @@ Use a disposable destination; `helix init` intentionally refuses to overwrite it
   do not perform.
 - Keep generated projects independent from this repository after creation.
 - Update the README, changelog, and productization record when behavior or release scope changes.
-- Do not change license text or publication identity without an explicit owner decision.
+- Contributions are accepted under Apache-2.0 as described in section 5 of the license.
+- Do not change licensing, ownership, or publication identity without an explicit Samsarix LLC
+  decision.

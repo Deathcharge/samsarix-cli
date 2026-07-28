@@ -4,8 +4,8 @@ from pathlib import Path
 
 import click
 
-from helix_cli.scaffold import ScaffoldError, scaffold_project
-from helix_cli.templates import DEFAULT_TEMPLATE, TEMPLATE_NAMES
+from samsarix_cli.scaffold import ScaffoldError, scaffold_project
+from samsarix_cli.templates import DEFAULT_TEMPLATE, TEMPLATE_NAMES
 
 
 @click.command("init")
@@ -40,7 +40,7 @@ def init(
 ) -> None:
     """Create a new project at DESTINATION.
 
-    Generation is all-or-nothing. Helix refuses to replace an existing path
+    Generation is all-or-nothing. Samsarix refuses to replace an existing path
     and removes its temporary staging directory if any step fails.
     """
     try:
@@ -61,4 +61,4 @@ def init(
     click.echo("Next:")
     click.echo(f'  cd "{result.destination}"')
     click.echo("  Read README.md for setup and run commands.")
-    click.echo(f'  helix check "{result.destination}"')
+    click.echo(f'  samsarix check "{result.destination}"')

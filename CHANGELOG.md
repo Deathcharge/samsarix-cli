@@ -3,6 +3,18 @@
 All notable changes to this project will be documented here. The format follows Keep a Changelog,
 and versions follow Python's PEP 440 representation of semantic release stages.
 
+## [1.1.0rc2] - 2026-07-28
+
+### Changed
+
+- Rebranded the distribution, command, import package, manifests, and documentation from Helix to
+  Samsarix CLI.
+- Set Samsarix LLC as the project owner and added working general and support contacts.
+- Replaced contradictory source-available/proprietary terms with the standard Apache License 2.0,
+  an attribution `NOTICE`, and a separate brand-use policy.
+- Selected the currently unclaimed `samsarix-cli` PyPI distribution name; publication remains an
+  owner-controlled release action and the legacy GitHub repository path remains unchanged.
+
 ## [1.1.0rc1] - 2026-07-28
 
 ### Added
@@ -33,4 +45,3 @@ and versions follow Python's PEP 440 representation of semantic release stages.
 
 - Initial repository import. This version was not a credible public release: its built wheel omitted
   the command package, and most advertised commands returned simulated data.
-

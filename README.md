@@ -1,13 +1,12 @@
-# Helix CLI
+# Samsarix CLI
 
-Helix CLI is an offline project generator for developers who want a small, understandable Python
-application starter without depending on a hosted Helix service. It creates a new directory from one
-of four reviewed templates, can initialize Git, and records enough metadata for `helix check` to
-detect a damaged scaffold.
+Samsarix CLI is an offline project generator from Samsarix LLC for developers who want a small,
+understandable Python application starter. It creates a new directory from one of four reviewed
+templates, can initialize Git, and records enough metadata for `samsarix check` to detect a damaged
+scaffold.
 
-The project is a beta release candidate. The local CLI and generated projects are functional, but
-public package publication is blocked by the name and license decisions described under
-[Distribution](#distribution) and [License](#license).
+The project is a beta release candidate. The local CLI, distributions, and generated FastAPI journey
+are verified; public PyPI publication and GitHub-hosted CI remain external release steps.
 
 ## What it creates
 
@@ -23,8 +22,8 @@ Every generated project includes:
 - a `src/` package and focused tests;
 - a modern `pyproject.toml` with bounded dependency ranges;
 - setup, run, check, and platform-specific activation instructions;
-- `.helix/project.json` for structural validation;
-- no dependency on `helix-unified`, `helix-collective`, private endpoints, or paid APIs; and
+- `.samsarix/project.json` for structural validation;
+- no dependency on this repository, a private service, or a paid API; and
 - no selected license, leaving that legal choice with the generated project's owner.
 
 ## Requirements
@@ -32,10 +31,12 @@ Every generated project includes:
 - Python 3.11 or newer
 - Git, unless every project is created with `--no-git`
 
-Helix itself makes no network requests. Network access is needed only when `pip` downloads Helix or
-the dependencies declared by a generated project.
+Samsarix CLI makes no network requests. Network access is needed only when `pip` downloads the CLI
+or dependencies declared by a generated project.
 
 ## Install from source
+
+The GitHub repository still uses its pre-rebrand path:
 
 ```bash
 git clone https://github.com/Deathcharge/helix-cli.git
@@ -60,20 +61,20 @@ Then install:
 ```bash
 python -m pip install --upgrade pip "setuptools>=83,<84"
 python -m pip install .
-helix --version
+samsarix --version
 ```
 
-Do not install the unrelated `helix-cli` distribution currently present on PyPI and assume it came
-from this repository. See [Distribution](#distribution).
+The `samsarix-cli` distribution is not yet published on PyPI. Until an official release is linked
+from this repository, install from a reviewed source tag rather than a similarly named package.
 
 ## Quick start
 
 List the templates and create the default FastAPI starter:
 
 ```bash
-helix templates
-helix init demo-api --template fastapi
-helix check demo-api
+samsarix templates
+samsarix init demo-api --template fastapi
+samsarix check demo-api
 cd demo-api
 ```
 
@@ -103,18 +104,19 @@ The final command starts the service on `127.0.0.1:8000`. Open
 ## Commands
 
 ```text
-helix templates [--json]
-helix init DESTINATION [--template NAME] [--name PROJECT_NAME] [--git|--no-git]
-helix check [PROJECT] [--json]
-helix --version
-helix --help
+samsarix templates [--json]
+samsarix init DESTINATION [--template NAME] [--name PROJECT_NAME] [--git|--no-git]
+samsarix check [PROJECT] [--json]
+samsarix --version
+samsarix --help
 ```
 
-`helix init` never overwrites an existing path. It stages every file in a temporary sibling
+`samsarix init` never overwrites an existing path. It stages every file in a temporary sibling
 directory and moves the completed result into place only after all requested work succeeds. Git is
-initialized by default, but Helix does not change user identity, stage files, or create a commit.
+initialized by default, but Samsarix CLI does not change user identity, stage files, or create a
+commit.
 
-`helix check` validates bounded JSON and TOML input, rejects manifest path traversal, confirms the
+`samsarix check` validates bounded JSON and TOML input, rejects manifest path traversal, confirms the
 declared generated files still exist, and uses exit code 1 for a failed check. `--json` provides a
 stable non-interactive result for scripts and CI.
 
@@ -126,73 +128,71 @@ python -m pip install -e ".[dev]"
 ruff format --check .
 ruff check .
 mypy
-pytest --cov=helix_cli --cov-report=term-missing
+pytest --cov=samsarix_cli --cov-report=term-missing
 pip-audit --local --skip-editable
 python -m build
 python -m twine check dist/*
 ```
 
-CI runs the meaningful checks on Python 3.11, 3.12, and 3.13, then builds a wheel and source archive,
-checks their metadata, installs the wheel into a fresh environment, and exercises `init` and
-`check` through the installed command.
+CI runs those checks on Python 3.11, 3.12, and 3.13, builds a wheel and source archive, validates
+their metadata, installs the wheel into a fresh environment, and exercises `init` and `check` through
+the installed command.
 
 ## Architecture
 
-- `helix_cli/main.py` exposes the deliberately small Click command surface.
-- `helix_cli/templates.py` contains the reviewed built-in starter renderers.
-- `helix_cli/scaffold.py` owns name validation, bounded Git execution, atomic writes, and cleanup.
-- `helix_cli/validation.py` treats generated-project metadata as untrusted input.
+- `samsarix_cli/main.py` exposes the deliberately small Click command surface.
+- `samsarix_cli/templates.py` contains the reviewed built-in starter renderers.
+- `samsarix_cli/scaffold.py` owns name validation, bounded Git execution, atomic writes, and cleanup.
+- `samsarix_cli/validation.py` treats generated-project metadata as untrusted input.
 - `tests/` covers commands, all templates, packaging-critical behavior, and adversarial failures.
 
-Helix deliberately does not run arbitrary remote templates. This keeps project creation offline and
-avoids the remote-code and template-provenance trust model of general-purpose generators.
+Samsarix CLI deliberately does not run arbitrary remote templates. This keeps project creation
+offline and avoids the remote-code and template-provenance trust model of general-purpose generators.
 
 ## Security and privacy
 
-Helix sends no telemetry, stores no credentials, and does not contact an API. The optional Git
+Samsarix CLI sends no telemetry, stores no credentials, and does not contact an API. The optional Git
 operation invokes the discovered Git executable with an argument list, a 20-second timeout, and no
 shell. The Discord template reads its token only from the process environment and disables the
 library's default log handler when passing the token.
 
 Generated applications are development starters, not hardened internet deployments. Their owners
 remain responsible for authentication, authorization, TLS, rate limits, secret management,
-dependency updates, and production server configuration appropriate to their use case. See
-[SECURITY.md](SECURITY.md) for reporting and supported-scope details.
+dependency updates, and production server configuration. Report vulnerabilities privately as
+described in [SECURITY.md](SECURITY.md), or email
+[support@samsarix.com](mailto:support@samsarix.com).
 
-## Distribution
+## Distribution and sustainability
 
-The simplest current distribution path is installation from a reviewed Git tag or source checkout.
-The `helix-cli` project name on PyPI was registered by another publisher in July 2025, so the owner
-must select and verify an available distribution name or establish control before publishing this
-repository. No package has been published, no production infrastructure has been changed, and CI
-contains no publishing credentials or release job.
+The intended distribution name is `samsarix-cli`; both that name and `samsarix` returned no current
+PyPI project record when checked on 2026-07-28. A name is not secured until Samsarix LLC publishes or
+reserves it, so availability must be checked again immediately before release. No package has been
+published and CI contains no publishing credential or release job.
 
-The CLI has no hosted operating cost. A plausible sustainability path is paid support or maintained
-organization-specific template packs, subject to an owner-approved license and name; the core local
-workflow does not need a subscription or usage-based service.
+The CLI has no hosted operating cost. A plausible sustainability path is paid support and maintained
+organization-specific template packs while keeping the core local workflow account-free.
 
 ## Limitations
 
 - Templates are intentionally built in; user-defined and remote template sources are not supported.
-- `helix check` verifies structure and metadata, not user-edited application semantics.
+- `samsarix check` verifies structure and metadata, not user-edited application semantics.
 - Dependency lockfiles are not generated because resolution is platform-specific; applications
   should adopt a lock workflow before production deployment.
 - Only the FastAPI template is exercised as a fully installed and running end-to-end sample in local
-  release verification; the remaining templates receive generation, syntax, metadata, and focused
-  content tests.
-- Public package naming and the repository's conflicting license files require owner decisions.
+  release verification; all templates receive generation, syntax, metadata, and focused tests.
+- Renaming the legacy GitHub repository path and reserving the PyPI name remain owner-controlled.
 
-## Contributing and product record
+## Contributing and contact
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the local workflow and
-[docs/PRODUCTIZATION.md](docs/PRODUCTIZATION.md) for the repository audit, decisions, baseline
-evidence, acceptance criteria, completed work, and remaining priorities.
+[docs/PRODUCTIZATION.md](docs/PRODUCTIZATION.md) for the audit, decisions, verification evidence, and
+remaining priorities. General inquiries can be sent to
+[contact@samsarix.com](mailto:contact@samsarix.com); support and security reports can be sent to
+[support@samsarix.com](mailto:support@samsarix.com).
 
-## License
+## License and brand
 
-This repository currently contains a modified Business Source License 1.1 text in [LICENSE](LICENSE)
-and a separate [LICENSE.PROPRIETARY](LICENSE.PROPRIETARY) whose terms refer to Apache License 2.0.
-The package metadata therefore uses a custom `LicenseRef` and identifies both files instead of
-claiming that this is Apache-licensed or OSI-approved. The owner must obtain legal review and publish
-one unambiguous licensing position before a public release. No license text was selected or changed
-during productization.
+Copyright 2026 Samsarix LLC. Licensed under the [Apache License 2.0](LICENSE). Redistributions must
+preserve the license and applicable attribution notices, including [NOTICE](NOTICE). The license does
+not grant rights to use Samsarix brand identifiers to imply sponsorship or endorsement; see
+[TRADEMARKS.md](TRADEMARKS.md).

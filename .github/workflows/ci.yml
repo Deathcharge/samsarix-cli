@@ -3,7 +3,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [master]
+    branches: [master, "codex/**"]
 
 permissions:
   contents: read
@@ -32,7 +32,7 @@ jobs:
       - name: Type check
         run: mypy
       - name: Test
-        run: pytest --cov=helix_cli --cov-report=term-missing
+        run: pytest --cov=samsarix_cli --cov-report=term-missing
       - name: Audit dependencies
         run: pip-audit --local --skip-editable
 
@@ -57,6 +57,6 @@ jobs:
         run: |
           python -m venv .wheel-venv
           .wheel-venv/bin/python -m pip install dist/*.whl
-          .wheel-venv/bin/helix --help
-          .wheel-venv/bin/helix init "$RUNNER_TEMP/helix-smoke" --no-git
-          .wheel-venv/bin/helix check "$RUNNER_TEMP/helix-smoke"
+          .wheel-venv/bin/samsarix --help
+          .wheel-venv/bin/samsarix init "$RUNNER_TEMP/samsarix-smoke" --no-git
+          .wheel-venv/bin/samsarix check "$RUNNER_TEMP/samsarix-smoke"

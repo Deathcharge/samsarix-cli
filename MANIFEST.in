@@ -1,4 +1,6 @@
 include CHANGELOG.md
 include CONTRIBUTING.md
+include NOTICE
 include SECURITY.md
+include TRADEMARKS.md
 recursive-include docs *.md

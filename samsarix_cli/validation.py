@@ -6,10 +6,10 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-from helix_cli.scaffold import ScaffoldError, validate_project_name
-from helix_cli.templates import TEMPLATE_BY_NAME
+from samsarix_cli.scaffold import ScaffoldError, validate_project_name
+from samsarix_cli.templates import TEMPLATE_BY_NAME
 
-_MANIFEST_PATH = Path(".helix/project.json")
+_MANIFEST_PATH = Path(".samsarix/project.json")
 _MAX_MANIFEST_BYTES = 64 * 1024
 _MAX_PYPROJECT_BYTES = 1024 * 1024
 _MAX_TRACKED_FILES = 256
@@ -63,8 +63,8 @@ def _safe_relative_path(value: object) -> PurePosixPath | None:
 def _check_manifest_fields(manifest: dict[str, Any], issues: list[str]) -> None:
     if manifest.get("schema_version") != 1:
         issues.append("manifest schema_version must be 1")
-    if manifest.get("generator") != "helix-cli":
-        issues.append("manifest generator must be 'helix-cli'")
+    if manifest.get("generator") != "samsarix-cli":
+        issues.append("manifest generator must be 'samsarix-cli'")
 
     project_name = manifest.get("project_name")
     module_name = manifest.get("module_name")
@@ -80,7 +80,7 @@ def _check_manifest_fields(manifest: dict[str, Any], issues: list[str]) -> None:
                 issues.append(f"manifest module_name must be {expected_module!r}")
 
     if manifest.get("template") not in TEMPLATE_BY_NAME:
-        issues.append("manifest template is not supported by this Helix CLI")
+        issues.append("manifest template is not supported by this Samsarix CLI")
 
 
 def _check_files(project: Path, manifest: dict[str, Any], issues: list[str]) -> None:
@@ -100,7 +100,7 @@ def _check_files(project: Path, manifest: dict[str, Any], issues: list[str]) -> 
         test_file = "tests/test_config.py" if template_name == "discord" else "tests/test_app.py"
         required_paths = {
             ".gitignore",
-            ".helix/project.json",
+            ".samsarix/project.json",
             "README.md",
             "pyproject.toml",
             f"src/{module_name}/__init__.py",
@@ -165,11 +165,11 @@ def check_project(project: Path) -> CheckResult:
 
     manifest_path = resolved_project / _MANIFEST_PATH
     if not manifest_path.is_file():
-        return CheckResult(resolved_project, ("missing .helix/project.json manifest",))
+        return CheckResult(resolved_project, ("missing .samsarix/project.json manifest",))
     try:
         resolved_manifest = manifest_path.resolve(strict=False)
     except OSError:
-        return CheckResult(resolved_project, ("cannot resolve .helix/project.json manifest",))
+        return CheckResult(resolved_project, ("cannot resolve .samsarix/project.json manifest",))
     if not resolved_manifest.is_relative_to(resolved_project):
         return CheckResult(resolved_project, ("manifest resolves outside the project",))
 

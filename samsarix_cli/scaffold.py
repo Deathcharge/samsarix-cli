@@ -10,8 +10,8 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
-from helix_cli import __version__
-from helix_cli.templates import TEMPLATE_BY_NAME, render_project
+from samsarix_cli import __version__
+from samsarix_cli.templates import TEMPLATE_BY_NAME, render_project
 
 _PROJECT_NAME = re.compile(r"^[A-Za-z][A-Za-z0-9_-]{0,63}$")
 _WINDOWS_RESERVED_NAMES = {
@@ -112,12 +112,14 @@ def scaffold_project(
 
     staging: Path | None = None
     try:
-        staging = Path(tempfile.mkdtemp(prefix=f".{resolved_destination.name}.helix-", dir=parent))
+        staging = Path(
+            tempfile.mkdtemp(prefix=f".{resolved_destination.name}.samsarix-", dir=parent)
+        )
         files = render_project(selected_name, module_name, template_name)
-        manifest_path = ".helix/project.json"
+        manifest_path = ".samsarix/project.json"
         manifest = {
             "files": sorted((*files, manifest_path)),
-            "generator": "helix-cli",
+            "generator": "samsarix-cli",
             "generator_version": __version__,
             "module_name": module_name,
             "project_name": selected_name,

@@ -4,7 +4,7 @@ import json
 
 import click
 
-from helix_cli.templates import TEMPLATE_SPECS
+from samsarix_cli.templates import TEMPLATE_SPECS
 
 
 @click.command("templates")
