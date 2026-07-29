@@ -40,7 +40,7 @@ or dependencies declared by a generated project.
 The GitHub repository still uses its pre-rebrand path:
 
 ```bash
-git clone https://github.com/Deathcharge/helix-cli.git
+git clone https://github.com/Deathcharge/samsarix-cli.git
 cd helix-cli
 python -m venv .venv
 ```

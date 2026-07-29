@@ -43,8 +43,7 @@ and authorized commits and a push. The release identity is now:
 - generated-project manifest: `.samsarix/project.json`;
 - copyright owner: Samsarix LLC.
 
-The GitHub repository remains at the accurate legacy path `Deathcharge/helix-cli`; renaming that
-external repository is not implied by a source change.
+The canonical GitHub repository is `Deathcharge/samsarix-cli`; the former Helix slug is retained only through GitHub's redirect and repository history.
 
 ## Evidence-based ecosystem and license decisions
 

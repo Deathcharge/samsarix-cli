@@ -48,8 +48,8 @@ dev = [
 samsarix = "samsarix_cli.main:cli"
 
 [project.urls]
-Repository = "https://github.com/Deathcharge/helix-cli"
-Issues = "https://github.com/Deathcharge/helix-cli/issues"
+Repository = "https://github.com/Deathcharge/samsarix-cli"
+Issues = "https://github.com/Deathcharge/samsarix-cli/issues"
 
 [tool.setuptools.dynamic]
 version = {attr = "samsarix_cli.__version__"}
