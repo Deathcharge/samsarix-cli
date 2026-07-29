@@ -1,62 +1,84 @@
 [build-system]
-requires = ["setuptools>=65.0", "wheel"]
+requires = ["setuptools>=83,<84", "wheel>=0.45,<1"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "helix-cli"
-version = "1.0.0"
-description = "Command-line interface for the Helix Collective ecosystem"
+name = "samsarix-cli"
+dynamic = ["version"]
+description = "Offline generator for independent, runnable Python project starters"
 readme = "README.md"
-requires-python = ">=3.9"
-license = {text = "Apache-2.0"}
+requires-python = ">=3.11"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE", "TRADEMARKS.md"]
 authors = [
-    {name = "Helix Collective", email = "info@helix.local"}
+    {name = "Samsarix LLC", email = "contact@samsarix.com"},
 ]
-keywords = ["helix", "cli", "orchestration", "ai", "agents"]
+maintainers = [
+    {name = "Samsarix Support", email = "support@samsarix.com"},
+]
+keywords = ["cli", "project-template", "python", "samsarix", "scaffolding"]
 classifiers = [
-    "Development Status :: 5 - Production/Stable",
+    "Development Status :: 4 - Beta",
     "Environment :: Console",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Topic :: Software Development :: Libraries",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Code Generators",
     "Topic :: Utilities",
 ]
-
 dependencies = [
-    "click>=8.1.0",
-    "rich>=13.0.0",
-    "requests>=2.31.0",
-    "pyyaml>=6.0",
-    "python-dotenv>=1.0.0",
-    "tabulate>=0.9.0",
+    "click>=8.1,<9",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=7.0",
-    "pytest-cov>=4.0",
-    "black>=23.0",
-    "flake8>=6.0",
-    "mypy>=1.0",
+    "build>=1.2,<2",
+    "mypy>=1.10,<2",
+    "pip-audit>=2.9,<3",
+    "pytest>=8,<10",
+    "pytest-cov>=5,<8",
+    "ruff>=0.11,<1",
+    "twine>=6,<7",
 ]
 
 [project.scripts]
-helix = "helix_cli.main:cli"
+samsarix = "samsarix_cli.main:cli"
 
-[tool.setuptools]
-packages = ["helix_cli"]
+[project.urls]
+Repository = "https://github.com/Deathcharge/helix-cli"
+Issues = "https://github.com/Deathcharge/helix-cli/issues"
 
-[tool.black]
+[tool.setuptools.dynamic]
+version = {attr = "samsarix_cli.__version__"}
+
+[tool.setuptools.packages.find]
+include = ["samsarix_cli*"]
+namespaces = false
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-config --strict-markers"
+testpaths = ["tests"]
+
+[tool.coverage.run]
+branch = true
+source = ["samsarix_cli"]
+
+[tool.coverage.report]
+fail_under = 90
+show_missing = true
+skip_covered = true
+
+[tool.ruff]
 line-length = 100
-target-version = ['py39']
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["B", "E", "F", "I", "SIM", "UP"]
 
 [tool.mypy]
-python_version = "3.9"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = false
+python_version = "3.11"
+strict = true
+files = ["samsarix_cli", "tests"]
