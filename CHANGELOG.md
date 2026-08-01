@@ -14,6 +14,7 @@ and versions follow Python's PEP 440 representation of semantic release stages.
 - Opt-in `samsarix check --strict` generated-content drift reporting.
 - A runnable `team-service` example pack and installed-wheel coverage for the complete pack workflow.
 - Explicit Windows reparse-point rejection and a total directory-entry bound for untrusted packs.
+- A pre-render-valid example `pyproject.toml` so dependency graph tooling can inspect the repository.
 
 ### Changed
 
