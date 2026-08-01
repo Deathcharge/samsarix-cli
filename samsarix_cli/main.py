@@ -5,6 +5,8 @@ import click
 from samsarix_cli import __version__
 from samsarix_cli.commands.check_cmd import check
 from samsarix_cli.commands.init_cmd import init
+from samsarix_cli.commands.inspect_template_cmd import inspect_template
+from samsarix_cli.commands.plan_cmd import plan
 from samsarix_cli.commands.templates_cmd import templates
 
 CONTEXT_SETTINGS = {
@@ -27,6 +29,8 @@ def cli() -> None:
 cli.add_command(init)
 cli.add_command(templates)
 cli.add_command(check)
+cli.add_command(plan)
+cli.add_command(inspect_template)
 
 
 if __name__ == "__main__":  # pragma: no cover - covered through samsarix_cli.__main__

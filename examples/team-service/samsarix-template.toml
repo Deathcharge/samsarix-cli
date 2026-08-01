@@ -1,0 +1,4 @@
+schema_version = 1
+name = "team-service"
+version = "1.0.0"
+description = "A dependency-free HTTP health service with tests and CI defaults."

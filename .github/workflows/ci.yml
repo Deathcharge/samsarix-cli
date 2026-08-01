@@ -53,6 +53,19 @@ jobs:
         run: python -m build
       - name: Check distribution metadata
         run: python -m twine check dist/*
+      - name: Verify source distribution contents
+        run: |
+          python - <<'PY'
+          import glob
+          import tarfile
+
+          archive = glob.glob("dist/*.tar.gz")[0]
+          with tarfile.open(archive) as source:
+              names = source.getnames()
+          required = "examples/team-service/samsarix-template.toml"
+          if not any(name.endswith(required) for name in names):
+              raise SystemExit(f"{required} is missing from {archive}")
+          PY
       - name: Install and exercise the wheel
         run: |
           python -m venv .wheel-venv
@@ -60,3 +73,12 @@ jobs:
           .wheel-venv/bin/samsarix --help
           .wheel-venv/bin/samsarix init "$RUNNER_TEMP/samsarix-smoke" --no-git
           .wheel-venv/bin/samsarix check "$RUNNER_TEMP/samsarix-smoke"
+          .wheel-venv/bin/samsarix inspect-template examples/team-service --json
+          .wheel-venv/bin/samsarix plan "$RUNNER_TEMP/samsarix-team-smoke" --template-pack examples/team-service --no-git --json
+          .wheel-venv/bin/samsarix init "$RUNNER_TEMP/samsarix-team-smoke" --template-pack examples/team-service --no-git
+          .wheel-venv/bin/samsarix check "$RUNNER_TEMP/samsarix-team-smoke" --strict
+          python -m venv "$RUNNER_TEMP/generated-venv"
+          "$RUNNER_TEMP/generated-venv/bin/python" -m pip install -e "$RUNNER_TEMP/samsarix-team-smoke[dev]"
+          "$RUNNER_TEMP/generated-venv/bin/python" -m pytest "$RUNNER_TEMP/samsarix-team-smoke/tests"
+          "$RUNNER_TEMP/generated-venv/bin/python" -m ruff format --check "$RUNNER_TEMP/samsarix-team-smoke"
+          "$RUNNER_TEMP/generated-venv/bin/python" -m ruff check "$RUNNER_TEMP/samsarix-team-smoke"

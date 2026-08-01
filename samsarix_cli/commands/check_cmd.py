@@ -16,9 +16,14 @@ from samsarix_cli.validation import check_project
     type=click.Path(path_type=Path, exists=True, file_okay=False, resolve_path=True),
 )
 @click.option("--json", "as_json", is_flag=True, help="Emit stable JSON for automation.")
-def check(project: Path, as_json: bool) -> None:
+@click.option(
+    "--strict",
+    is_flag=True,
+    help="Also verify generated-file hashes and report local drift.",
+)
+def check(project: Path, as_json: bool, strict: bool) -> None:
     """Check the generated-project contract at PROJECT (defaults to cwd)."""
-    result = check_project(project)
+    result = check_project(project, strict=strict)
 
     if as_json:
         click.echo(
@@ -26,6 +31,7 @@ def check(project: Path, as_json: bool) -> None:
                 {
                     "issues": list(result.issues),
                     "project": str(result.project),
+                    "strict": strict,
                     "valid": result.is_valid,
                 },
                 indent=2,

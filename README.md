@@ -1,13 +1,13 @@
 # Samsarix CLI
 
-Samsarix CLI is an offline project generator from Samsarix LLC for developers who want a small,
-understandable Python application starter. It creates a new directory from one of four reviewed
-templates, can initialize Git, and records enough metadata for `samsarix check` to detect a damaged
-scaffold.
+Samsarix CLI is an offline project generator from Samsarix LLC for developers and small platform
+teams that want reviewable Python application starters. It creates a new directory from one of four
+reviewed built-ins or a bounded local template pack, previews the exact plan before writing, can
+initialize Git, and records provenance for structural and generated-content checks.
 
-The project is a beta release candidate. The local CLI, distributions, generated FastAPI journey,
-and GitHub-hosted Python 3.11-3.13 CI are verified; public PyPI publication remains an external
-release step.
+Version `1.2.0rc1` is a verified beta release candidate. The local CLI, source and wheel artifacts,
+built-in and team-pack journeys, live-generated FastAPI health endpoint, and GitHub-hosted Python
+3.11-3.13 CI are verified; public PyPI publication remains an external release step.
 
 ## What it creates
 
@@ -27,6 +27,11 @@ Every generated project includes:
 - no dependency on this repository, a private service, or a paid API; and
 - no selected license, leaving that legal choice with the generated project's owner.
 
+Teams can also version their own declarative packs. Samsarix accepts UTF-8 text files and three
+explicit substitutions; it does not execute hooks, migrations, shell commands, extensions, or
+template code. See [Authoring template packs](docs/TEMPLATE_PACKS.md) and the runnable
+[`team-service` example](examples/team-service).
+
 ## Requirements
 
 - Python 3.11 or newer
@@ -37,11 +42,11 @@ or dependencies declared by a generated project.
 
 ## Install from source
 
-The GitHub repository still uses its pre-rebrand path:
+Clone the canonical repository:
 
 ```bash
 git clone https://github.com/Deathcharge/samsarix-cli.git
-cd helix-cli
+cd samsarix-cli
 python -m venv .venv
 ```
 
@@ -70,10 +75,11 @@ from this repository, install from a reviewed source tag rather than a similarly
 
 ## Quick start
 
-List the templates and create the default FastAPI starter:
+List the templates, preview the exact write set, and create the default FastAPI starter:
 
 ```bash
 samsarix templates
+samsarix plan demo-api --template fastapi
 samsarix init demo-api --template fastapi
 samsarix check demo-api
 cd demo-api
@@ -106,8 +112,10 @@ The final command starts the service on `127.0.0.1:8000`. Open
 
 ```text
 samsarix templates [--json]
-samsarix init DESTINATION [--template NAME] [--name PROJECT_NAME] [--git|--no-git]
-samsarix check [PROJECT] [--json]
+samsarix inspect-template PACK [--json]
+samsarix plan DESTINATION [--template NAME|--template-pack PACK] [--json]
+samsarix init DESTINATION [--template NAME|--template-pack PACK] [--name NAME] [--git|--no-git]
+samsarix check [PROJECT] [--strict] [--json]
 samsarix --version
 samsarix --help
 ```
@@ -117,9 +125,15 @@ directory and moves the completed result into place only after all requested wor
 initialized by default, but Samsarix CLI does not change user identity, stage files, or create a
 commit.
 
+`samsarix inspect-template` validates a local pack and reports its content digest without rendering
+or executing it. `samsarix plan` renders and validates the exact destination, template identity, and
+file list without creating the destination or its parent.
+
 `samsarix check` validates bounded JSON and TOML input, rejects manifest path traversal, confirms the
-declared generated files still exist, and uses exit code 1 for a failed check. `--json` provides a
-stable non-interactive result for scripts and CI.
+declared generated files still exist, and uses exit code 1 for a failed check. `--strict` also
+compares generated files with their recorded SHA-256 values, making intentional local edits visible
+as drift. `--json` provides a stable non-interactive result for scripts and CI. Schema-1 manifests
+from Samsarix 1.1 remain structurally checkable; strict drift checking requires schema 2.
 
 ## Development
 
@@ -143,12 +157,14 @@ the installed command.
 
 - `samsarix_cli/main.py` exposes the deliberately small Click command surface.
 - `samsarix_cli/templates.py` contains the reviewed built-in starter renderers.
+- `samsarix_cli/template_pack.py` parses bounded local packs without links or code execution.
 - `samsarix_cli/scaffold.py` owns name validation, bounded Git execution, atomic writes, and cleanup.
 - `samsarix_cli/validation.py` treats generated-project metadata as untrusted input.
 - `tests/` covers commands, all templates, packaging-critical behavior, and adversarial failures.
 
-Samsarix CLI deliberately does not run arbitrary remote templates. This keeps project creation
-offline and avoids the remote-code and template-provenance trust model of general-purpose generators.
+Samsarix CLI deliberately does not fetch remote templates or run arbitrary template logic. Local
+packs remain ordinary directories that can be reviewed, signed, and distributed using a team's
+existing source-control and artifact workflow.
 
 ## Security and privacy
 
@@ -165,8 +181,8 @@ described in [SECURITY.md](SECURITY.md), or email
 
 ## Distribution and sustainability
 
-The intended distribution name is `samsarix-cli`; both that name and `samsarix` returned no current
-PyPI project record when checked on 2026-07-28. A name is not secured until Samsarix LLC publishes or
+The intended distribution name is `samsarix-cli`; both that name and `samsarix` returned HTTP 404
+from PyPI when checked on 2026-08-01. A name is not secured until Samsarix LLC publishes or
 reserves it, so availability must be checked again immediately before release. No package has been
 published and CI contains no publishing credential or release job.
 
@@ -175,13 +191,15 @@ organization-specific template packs while keeping the core local workflow accou
 
 ## Limitations
 
-- Templates are intentionally built in; user-defined and remote template sources are not supported.
-- `samsarix check` verifies structure and metadata, not user-edited application semantics.
+- Template packs are local and non-interactive; remote fetching, prompts, hooks, update migrations,
+  and arbitrary template languages are intentionally unsupported.
+- Strict checks identify changes from the generated baseline; they do not determine whether an edit
+  is correct or update an existing project from a newer pack.
 - Dependency lockfiles are not generated because resolution is platform-specific; applications
   should adopt a lock workflow before production deployment.
-- Only the FastAPI template is exercised as a fully installed and running end-to-end sample in local
-  release verification; all templates receive generation, syntax, metadata, and focused tests.
-- Renaming the legacy GitHub repository path and reserving the PyPI name remain owner-controlled.
+- The built-in FastAPI starter and local `team-service` example receive installed end-to-end release
+  verification; every built-in receives generation, syntax, metadata, and focused tests.
+- Reserving or publishing the PyPI name remains owner-controlled.
 
 ## Contributing and contact
 

@@ -74,6 +74,20 @@ def test_duplicate_manifest_entries_are_reported(tmp_path: Path) -> None:
     assert "manifest files contains duplicate paths" in result.issues
 
 
+def test_manifest_paths_must_be_portable_and_case_distinct(tmp_path: Path) -> None:
+    project = _project(tmp_path)
+    path, manifest = _manifest(project)
+    files = manifest["files"]
+    assert isinstance(files, list)
+    files.extend(["readme.md", "bad:name"])
+    path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    result = check_project(project)
+
+    assert "manifest files contains duplicate paths" in result.issues
+    assert "manifest contains an unsafe file path: 'bad:name'" in result.issues
+
+
 def test_manifest_cannot_omit_the_required_file_contract(tmp_path: Path) -> None:
     project = _project(tmp_path)
     path, manifest = _manifest(project)
@@ -85,6 +99,26 @@ def test_manifest_cannot_omit_the_required_file_contract(tmp_path: Path) -> None
     result = check_project(project)
 
     assert "manifest does not declare required file: README.md" in result.issues
+
+
+def test_local_manifest_must_declare_itself_and_generated_content(tmp_path: Path) -> None:
+    project = _project(tmp_path)
+    path, manifest = _manifest(project)
+    manifest.update(
+        {
+            "files": [],
+            "file_hashes": {},
+            "template": "local-pack",
+            "template_kind": "local",
+            "template_version": "1",
+        }
+    )
+    path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    result = check_project(project)
+
+    assert "manifest does not declare required file: .samsarix/project.json" in result.issues
+    assert "manifest must declare at least one generated file" in result.issues
 
 
 def test_metadata_symlinks_cannot_escape_the_project(tmp_path: Path) -> None:
@@ -169,7 +203,7 @@ def test_manifest_identity_fields_are_validated(tmp_path: Path) -> None:
         {
             "generator": "other",
             "module_name": "wrong",
-            "schema_version": 2,
+            "schema_version": 3,
             "template": "unknown",
         }
     )
@@ -177,10 +211,50 @@ def test_manifest_identity_fields_are_validated(tmp_path: Path) -> None:
 
     result = check_project(project)
 
-    assert "manifest schema_version must be 1" in result.issues
+    assert "manifest schema_version must be 1 or 2" in result.issues
     assert "manifest generator must be 'samsarix-cli'" in result.issues
     assert "manifest module_name must be 'validated_project'" in result.issues
     assert "manifest template is not supported by this Samsarix CLI" in result.issues
+
+
+def test_schema_one_manifest_remains_compatible(tmp_path: Path) -> None:
+    project = _project(tmp_path)
+    path, manifest = _manifest(project)
+    manifest["schema_version"] = 1
+    for field in ("file_hashes", "template_digest", "template_kind", "template_version"):
+        del manifest[field]
+    path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    assert check_project(project).is_valid
+    strict_result = check_project(project, strict=True)
+    assert strict_result.issues == ("strict drift checking requires a schema_version 2 manifest",)
+
+
+def test_strict_check_reports_modified_generated_content(tmp_path: Path) -> None:
+    project = _project(tmp_path)
+    readme = project / "README.md"
+    readme.write_text(readme.read_text(encoding="utf-8") + "local edit\n", encoding="utf-8")
+
+    assert check_project(project).is_valid
+    result = check_project(project, strict=True)
+
+    assert "generated file was modified: README.md" in result.issues
+
+
+def test_schema_two_hash_contract_is_validated_without_strict_mode(tmp_path: Path) -> None:
+    project = _project(tmp_path)
+    path, manifest = _manifest(project)
+    hashes = manifest["file_hashes"]
+    assert isinstance(hashes, dict)
+    del hashes["README.md"]
+    hashes["untracked.txt"] = "not-a-digest"
+    path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    result = check_project(project)
+
+    assert "manifest file_hashes does not declare generated file: README.md" in result.issues
+    assert "manifest file_hashes contains undeclared file: untracked.txt" in result.issues
+    assert "manifest file_hashes contains an invalid SHA-256 digest: untracked.txt" in result.issues
 
 
 def test_manifest_project_name_type_and_value_are_validated(tmp_path: Path) -> None:
@@ -207,12 +281,12 @@ def test_manifest_files_type_and_count_are_bounded(tmp_path: Path) -> None:
     path.write_text(json.dumps(manifest), encoding="utf-8")
     wrong_type = check_project(project)
 
-    manifest["files"] = [f"file-{index}" for index in range(257)]
+    manifest["files"] = [f"file-{index}" for index in range(258)]
     path.write_text(json.dumps(manifest), encoding="utf-8")
     too_many = check_project(project)
 
     assert "manifest files must be a JSON array" in wrong_type.issues
-    assert "manifest files exceeds the 256-entry safety limit" in too_many.issues
+    assert "manifest files exceeds the 257-entry safety limit" in too_many.issues
 
 
 def test_manifest_and_pyproject_identity_must_agree(tmp_path: Path) -> None:

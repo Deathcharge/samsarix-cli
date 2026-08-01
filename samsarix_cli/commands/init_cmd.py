@@ -16,9 +16,19 @@ from samsarix_cli.templates import DEFAULT_TEMPLATE, TEMPLATE_NAMES
 @click.option(
     "--template",
     type=click.Choice(TEMPLATE_NAMES, case_sensitive=False),
-    default=DEFAULT_TEMPLATE,
-    show_default=True,
-    help="Starter to generate.",
+    default=None,
+    show_default=DEFAULT_TEMPLATE,
+    help="Built-in starter to generate.",
+)
+@click.option(
+    "--template-pack",
+    type=click.Path(
+        path_type=Path,
+        exists=True,
+        file_okay=False,
+        resolve_path=False,
+    ),
+    help="Local declarative template-pack directory.",
 )
 @click.option(
     "--name",
@@ -34,7 +44,8 @@ from samsarix_cli.templates import DEFAULT_TEMPLATE, TEMPLATE_NAMES
 )
 def init(
     destination: Path,
-    template: str,
+    template: str | None,
+    template_pack: Path | None,
     project_name: str | None,
     initialize_git: bool,
 ) -> None:
@@ -47,13 +58,19 @@ def init(
         result = scaffold_project(
             destination=destination,
             project_name=project_name,
-            template_name=template.lower(),
+            template_name=template.lower() if template is not None else None,
+            template_pack=template_pack,
             initialize_git=initialize_git,
         )
     except ScaffoldError as exc:
         raise click.ClickException(str(exc)) from exc
 
-    click.echo(f"Created {result.project_name!r} with the {result.template_name} template.")
+    click.echo(
+        f"Created {result.project_name!r} with the {result.template_name} "
+        f"{result.template_kind} template."
+    )
+    click.echo(f"Template version: {result.template_version}")
+    click.echo(f"Template digest: {result.template_digest}")
     click.echo(f"Location: {result.destination}")
     click.echo(f"Files: {len(result.files)}")
     click.echo(f"Git: {'initialized' if result.git_initialized else 'not initialized'}")
