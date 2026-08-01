@@ -1,7 +1,10 @@
 """Safety and rendering contracts for local template packs."""
 
 import os
+from io import BytesIO
 from pathlib import Path
+from types import SimpleNamespace
+from typing import IO, Any, cast
 
 import pytest
 
@@ -91,6 +94,18 @@ def test_metadata_contract_is_strict(tmp_path: Path, metadata: str, message: str
         load_template_pack(root)
 
 
+def test_metadata_description_rejects_control_characters(tmp_path: Path) -> None:
+    root = _pack(tmp_path)
+    metadata = root / "samsarix-template.toml"
+    metadata.write_text(
+        'schema_version = 1\nname = "pack"\nversion = "1"\ndescription = "bad\\u0007description"\n',
+        encoding="utf-8",
+    )
+
+    with pytest.raises(TemplatePackError, match="description must be"):
+        load_template_pack(root)
+
+
 def test_metadata_and_template_directory_are_required(tmp_path: Path) -> None:
     root = tmp_path / "pack"
     root.mkdir()
@@ -130,6 +145,19 @@ def test_template_must_contain_utf8_regular_files(tmp_path: Path) -> None:
         load_template_pack(binary_pack)
     with pytest.raises(TemplatePackError, match="at least one template file"):
         load_template_pack(empty_pack)
+
+
+def test_bounded_read_rejects_a_file_that_grows_after_stat() -> None:
+    class GrowingPath:
+        def stat(self) -> SimpleNamespace:
+            return SimpleNamespace(st_size=4)
+
+        def open(self, *_args: Any, **_kwargs: Any) -> IO[bytes]:
+            return BytesIO(b"12345")
+
+    path = cast(Path, GrowingPath())
+    with pytest.raises(TemplatePackError, match="4-byte safety limit"):
+        template_pack_module._read_bounded(path, 4, "template file growing.txt")
 
 
 def test_file_size_count_and_total_size_are_bounded(
@@ -209,6 +237,14 @@ def test_render_rejects_reserved_nonportable_and_duplicate_paths(tmp_path: Path)
             {"@@PROJECT_NAME@@.txt": "one", "demo.TXT": "two"},
         )
     )
+    backslash = TemplatePack(
+        description="test",
+        digest="0" * 64,
+        files=(TemplateFile(r"nested\escape.txt", "x"),),
+        name="backslash",
+        root=tmp_path,
+        version="1",
+    )
 
     with pytest.raises(TemplatePackError, match="reserved generator path"):
         reserved.render("demo", "demo")
@@ -216,6 +252,8 @@ def test_render_rejects_reserved_nonportable_and_duplicate_paths(tmp_path: Path)
         nonportable.render("demo", "demo")
     with pytest.raises(TemplatePackError, match="duplicate file path"):
         duplicate.render("demo", "demo")
+    with pytest.raises(TemplatePackError, match="non-portable file path"):
+        backslash.render("demo", "demo")
 
 
 def test_digest_changes_with_metadata_path_or_content(tmp_path: Path) -> None:
@@ -233,3 +271,11 @@ def test_digest_changes_with_metadata_path_or_content(tmp_path: Path) -> None:
         load_template_pack(candidate).digest for candidate in (original, content, path, metadata)
     }
     assert len(digests) == 4
+
+
+def test_digest_normalizes_line_endings(tmp_path: Path) -> None:
+    lf = load_template_pack(_pack(tmp_path / "lf", {"README.md": "one\ntwo\n"}))
+    crlf = load_template_pack(_pack(tmp_path / "crlf", {"README.md": "one\r\ntwo\r\n"}))
+
+    assert lf.digest == crlf.digest
+    assert crlf.files[0].content == "one\ntwo\n"

@@ -8,25 +8,18 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any
 
+from samsarix_cli.portability import is_portable_path_part
 from samsarix_cli.scaffold import ScaffoldError, validate_project_name
 from samsarix_cli.templates import TEMPLATE_BY_NAME
 
 _MANIFEST_PATH = Path(".samsarix/project.json")
 _MAX_MANIFEST_BYTES = 64 * 1024
 _MAX_PYPROJECT_BYTES = 1024 * 1024
+_MAX_HASHED_FILE_BYTES = 1024 * 1024
 _MAX_GENERATED_FILES = 256
 _MAX_TRACKED_FILES = _MAX_GENERATED_FILES + 1
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _LOCAL_TEMPLATE_NAME = re.compile(r"^[a-z][a-z0-9-]{0,63}$")
-_INVALID_WINDOWS_CHARACTERS = frozenset('<>:"|?*')
-_WINDOWS_RESERVED_NAMES = {
-    "AUX",
-    "CON",
-    "NUL",
-    "PRN",
-    *(f"COM{number}" for number in range(1, 10)),
-    *(f"LPT{number}" for number in range(1, 10)),
-}
 
 
 @dataclass(frozen=True, slots=True)
@@ -72,14 +65,7 @@ def _safe_relative_path(value: object) -> PurePosixPath | None:
     if relative.is_absolute() or ".." in relative.parts or "." in relative.parts:
         return None
     for part in relative.parts:
-        if (
-            part.endswith((" ", "."))
-            or any(
-                character in _INVALID_WINDOWS_CHARACTERS or ord(character) < 32
-                for character in part
-            )
-            or part.split(".", 1)[0].upper() in _WINDOWS_RESERVED_NAMES
-        ):
+        if not is_portable_path_part(part):
             return None
     return relative
 
@@ -245,7 +231,7 @@ def _check_file_hashes(
         try:
             content = _read_bounded(
                 candidate,
-                _MAX_PYPROJECT_BYTES,
+                _MAX_HASHED_FILE_BYTES,
                 f"generated file {relative.as_posix()}",
             )
         except ValueError as exc:

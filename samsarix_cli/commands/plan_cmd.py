@@ -27,7 +27,7 @@ from samsarix_cli.templates import DEFAULT_TEMPLATE, TEMPLATE_NAMES
         path_type=Path,
         exists=True,
         file_okay=False,
-        resolve_path=True,
+        resolve_path=False,
     ),
     help="Local declarative template-pack directory.",
 )

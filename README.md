@@ -6,7 +6,7 @@ reviewed built-ins or a bounded local template pack, previews the exact plan bef
 initialize Git, and records provenance for structural and generated-content checks.
 
 Version `1.2.0rc1` is a verified beta release candidate. The local CLI, source and wheel artifacts,
-built-in and team-pack journeys, live generated FastAPI health endpoint, and GitHub-hosted Python
+built-in and team-pack journeys, live-generated FastAPI health endpoint, and GitHub-hosted Python
 3.11-3.13 CI are verified; public PyPI publication remains an external release step.
 
 ## What it creates

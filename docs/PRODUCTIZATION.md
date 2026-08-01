@@ -30,8 +30,8 @@ The primary journey is:
 3. review `samsarix plan DESTINATION` in human or JSON form;
 4. run `samsarix init` with a built-in or local pack;
 5. run the structural check and, when appropriate, `samsarix check --strict` for baseline drift;
-6. install the generated project's development dependencies, run its tests, and start its local
-   health endpoint.
+6. install the generated project's development dependencies, run its tests, and start its documented
+   local process, such as a health endpoint when the template provides one.
 
 The 2026-07-28 owner decision moved the brand to Samsarix, identified Samsarix LLC as the company,
 provided `contact@samsarix.com` and `support@samsarix.com`, requested relevant repository updates,
@@ -211,9 +211,9 @@ The `1.2.0rc1` team-template candidate was verified on Windows and on GitHub-hos
 
 | Command/check | Actual result |
 | --- | --- |
-| `ruff format --check .` / `ruff check .` | exit 0; 18 files formatted; lint passed |
-| Python 3.11 `mypy` | exit 0; no issues in 18 source/test files |
-| `pytest --cov=samsarix_cli --cov-report=term-missing` | exit 0; 71 passed; 91.58% branch coverage |
+| `ruff format --check .` / `ruff check .` | exit 0; 19 files formatted; lint passed |
+| Python 3.11 `mypy` | exit 0; no issues in 19 source/test files |
+| `pytest --cov=samsarix_cli --cov-report=term-missing` | exit 0; 76 passed; 91.93% branch coverage |
 | generated `team-service` tests and Ruff checks | exit 0; 1 passed; lint/format passed |
 | generated FastAPI tests and Ruff checks | exit 0; 1 passed; lint/format passed |
 | live generated FastAPI `/health` | HTTP 200; `{"status":"ok"}` |

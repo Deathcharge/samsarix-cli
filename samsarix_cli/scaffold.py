@@ -12,19 +12,12 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from samsarix_cli import __version__
+from samsarix_cli.portability import WINDOWS_RESERVED_NAMES
 from samsarix_cli.template_pack import TemplatePackError, load_template_pack
 from samsarix_cli.templates import DEFAULT_TEMPLATE, TEMPLATE_BY_NAME, render_project
 
 _PROJECT_NAME = re.compile(r"^[A-Za-z][A-Za-z0-9_-]{0,63}$")
 _MAX_MANIFEST_BYTES = 64 * 1024
-_WINDOWS_RESERVED_NAMES = {
-    "AUX",
-    "CON",
-    "NUL",
-    "PRN",
-    *(f"COM{number}" for number in range(1, 10)),
-    *(f"LPT{number}" for number in range(1, 10)),
-}
 
 
 class ScaffoldError(RuntimeError):
@@ -69,7 +62,7 @@ def validate_project_name(project_name: str) -> str:
             "Project names must start with a letter, contain only letters, numbers, "
             "hyphens, or underscores, and be at most 64 characters."
         )
-    if project_name.upper() in _WINDOWS_RESERVED_NAMES:
+    if project_name.upper() in WINDOWS_RESERVED_NAMES:
         raise ScaffoldError(f"{project_name!r} is a reserved path name on Windows.")
 
     module_name = project_name.lower().replace("-", "_")
@@ -220,6 +213,8 @@ def scaffold_project(
         if initialize_git:
             _initialize_git(staging)
 
+        if plan.destination.exists() or plan.destination.is_symlink():
+            raise ScaffoldError(f"Destination became occupied: {plan.destination}")
         os.replace(staging, plan.destination)
         staging = None
     except ScaffoldError:

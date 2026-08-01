@@ -5,8 +5,11 @@ import os
 import re
 import stat
 import tomllib
+import unicodedata
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
+
+from samsarix_cli.portability import is_portable_path_part
 
 METADATA_FILENAME = "samsarix-template.toml"
 TEMPLATE_DIRECTORY = "template"
@@ -20,15 +23,6 @@ _PACK_NAME = re.compile(r"^[a-z][a-z0-9-]{0,63}$")
 _PACK_VERSION = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$")
 _TOKEN = re.compile(r"@@[^@\r\n]+@@")
 _TOKENS = ("@@PROJECT_NAME@@", "@@MODULE_NAME@@", "@@COMMAND_NAME@@")
-_INVALID_WINDOWS_CHARACTERS = frozenset('<>:"|?*')
-_WINDOWS_RESERVED_NAMES = {
-    "AUX",
-    "CON",
-    "NUL",
-    "PRN",
-    *(f"COM{number}" for number in range(1, 10)),
-    *(f"LPT{number}" for number in range(1, 10)),
-}
 
 
 class TemplatePackError(ValueError):
@@ -82,9 +76,13 @@ def _read_bounded(path: Path, limit: int, label: str) -> bytes:
     if size > limit:
         raise TemplatePackError(f"{label} exceeds the {limit}-byte safety limit")
     try:
-        return path.read_bytes()
+        with path.open("rb") as file_handle:
+            content = file_handle.read(limit + 1)
     except OSError as exc:
         raise TemplatePackError(f"cannot read {label}: {exc}") from exc
+    if len(content) > limit:
+        raise TemplatePackError(f"{label} exceeds the {limit}-byte safety limit")
+    return content
 
 
 def _is_link_like(path: Path, label: str) -> bool:
@@ -131,8 +129,7 @@ def _metadata(path: Path) -> tuple[str, str, str]:
         not isinstance(description, str)
         or not description.strip()
         or len(description) > 256
-        or "\n" in description
-        or "\r" in description
+        or any(unicodedata.category(character) == "Cc" for character in description)
     ):
         raise TemplatePackError(
             "template description must be one non-empty line of at most 256 characters"
@@ -174,15 +171,7 @@ def _validate_rendered_path(path: str) -> None:
     if first in {".git", ".samsarix"}:
         raise TemplatePackError(f"template cannot write reserved generator path: {path}")
     for part in relative.parts:
-        if (
-            not part
-            or part.endswith((" ", "."))
-            or any(
-                character in _INVALID_WINDOWS_CHARACTERS or ord(character) < 32
-                for character in part
-            )
-            or part.split(".", 1)[0].upper() in _WINDOWS_RESERVED_NAMES
-        ):
+        if not is_portable_path_part(part):
             raise TemplatePackError(f"template renders a non-portable file path: {path}")
 
 

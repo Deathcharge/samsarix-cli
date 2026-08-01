@@ -142,6 +142,32 @@ def test_partial_generation_is_cleaned_up(tmp_path: Path, monkeypatch: pytest.Mo
     assert not list(tmp_path.glob(".broken.samsarix-*"))
 
 
+def test_destination_occupied_during_generation_is_preserved(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    destination = tmp_path / "raced"
+    real_write_file = scaffold_module._write_file
+
+    def occupy_before_move(root: Path, relative_path: str, content: str) -> None:
+        real_write_file(root, relative_path, content)
+        if relative_path == "tests/test_app.py":
+            destination.mkdir()
+            (destination / "keep.txt").write_text("user data", encoding="utf-8")
+
+    monkeypatch.setattr(scaffold_module, "_write_file", occupy_before_move)
+
+    with pytest.raises(ScaffoldError, match="Destination became occupied"):
+        scaffold_project(
+            destination=destination,
+            project_name=None,
+            template_name="fastapi",
+            initialize_git=False,
+        )
+
+    assert (destination / "keep.txt").read_text(encoding="utf-8") == "user data"
+    assert not list(tmp_path.glob(".raced.samsarix-*"))
+
+
 def test_cancelled_generation_is_cleaned_up(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -1,6 +1,7 @@
 """Command-level behavior and output contracts."""
 
 import json
+import os
 import runpy
 import sys
 from pathlib import Path
@@ -217,3 +218,30 @@ def test_template_command_errors_are_concise_and_non_destructive() -> None:
         assert "Destination already exists" in planned.output
         assert "Traceback" not in planned.output
         assert not list(destination.iterdir())
+
+
+def test_cli_rejects_a_symlinked_template_pack_root() -> None:
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        pack = _template_pack(Path.cwd())
+        link = Path("pack-link")
+        try:
+            os.symlink(pack, link, target_is_directory=True)
+        except OSError as exc:
+            pytest.skip(f"directory symlinks are unavailable: {exc}")
+
+        inspected = runner.invoke(cli, ["inspect-template", str(link)])
+        planned = runner.invoke(
+            cli,
+            ["plan", "planned", "--template-pack", str(link), "--no-git"],
+        )
+        initialized = runner.invoke(
+            cli,
+            ["init", "initialized", "--template-pack", str(link), "--no-git"],
+        )
+
+        for result in (inspected, planned, initialized):
+            assert result.exit_code == 1
+            assert "root cannot be a symbolic link or reparse point" in result.output
+        assert not Path("planned").exists()
+        assert not Path("initialized").exists()

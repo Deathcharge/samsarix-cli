@@ -15,7 +15,7 @@ from samsarix_cli.template_pack import TemplatePackError, load_template_pack
         path_type=Path,
         exists=True,
         file_okay=False,
-        resolve_path=True,
+        resolve_path=False,
     ),
 )
 @click.option("--json", "as_json", is_flag=True, help="Emit stable JSON for automation.")

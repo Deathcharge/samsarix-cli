@@ -53,6 +53,19 @@ jobs:
         run: python -m build
       - name: Check distribution metadata
         run: python -m twine check dist/*
+      - name: Verify source distribution contents
+        run: |
+          python - <<'PY'
+          import glob
+          import tarfile
+
+          archive = glob.glob("dist/*.tar.gz")[0]
+          with tarfile.open(archive) as source:
+              names = source.getnames()
+          required = "examples/team-service/samsarix-template.toml"
+          if not any(name.endswith(required) for name in names):
+              raise SystemExit(f"{required} is missing from {archive}")
+          PY
       - name: Install and exercise the wheel
         run: |
           python -m venv .wheel-venv

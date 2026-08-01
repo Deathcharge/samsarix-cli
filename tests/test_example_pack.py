@@ -17,7 +17,15 @@ def test_team_service_example_is_inspectable_and_deterministic(tmp_path: Path) -
     assert first.name == "team-service"
     assert first.version == "1.0.0"
     assert first.digest == second.digest
-    assert len(first.files) == 7
+    assert tuple(template_file.path for template_file in first.files) == (
+        ".github/workflows/ci.yml",
+        ".gitignore",
+        "README.md",
+        "pyproject.toml",
+        "src/@@MODULE_NAME@@/__init__.py",
+        "src/@@MODULE_NAME@@/main.py",
+        "tests/test_health.py",
+    )
 
     plan = plan_project(
         destination=tmp_path / "planned-service",
@@ -50,5 +58,7 @@ def test_team_service_example_generates_valid_python_project(tmp_path: Path) -> 
     assert manifest["template_version"] == "1.0.0"
     assert manifest["schema_version"] == 2
 
-    for python_file in destination.rglob("*.py"):
+    python_files = list(destination.rglob("*.py"))
+    assert python_files
+    for python_file in python_files:
         compile(python_file.read_text(encoding="utf-8"), str(python_file), "exec")
