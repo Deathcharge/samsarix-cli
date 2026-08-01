@@ -74,6 +74,20 @@ def test_duplicate_manifest_entries_are_reported(tmp_path: Path) -> None:
     assert "manifest files contains duplicate paths" in result.issues
 
 
+def test_manifest_paths_must_be_portable_and_case_distinct(tmp_path: Path) -> None:
+    project = _project(tmp_path)
+    path, manifest = _manifest(project)
+    files = manifest["files"]
+    assert isinstance(files, list)
+    files.extend(["readme.md", "bad:name"])
+    path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    result = check_project(project)
+
+    assert "manifest files contains duplicate paths" in result.issues
+    assert "manifest contains an unsafe file path: 'bad:name'" in result.issues
+
+
 def test_manifest_cannot_omit_the_required_file_contract(tmp_path: Path) -> None:
     project = _project(tmp_path)
     path, manifest = _manifest(project)
@@ -85,6 +99,26 @@ def test_manifest_cannot_omit_the_required_file_contract(tmp_path: Path) -> None
     result = check_project(project)
 
     assert "manifest does not declare required file: README.md" in result.issues
+
+
+def test_local_manifest_must_declare_itself_and_generated_content(tmp_path: Path) -> None:
+    project = _project(tmp_path)
+    path, manifest = _manifest(project)
+    manifest.update(
+        {
+            "files": [],
+            "file_hashes": {},
+            "template": "local-pack",
+            "template_kind": "local",
+            "template_version": "1",
+        }
+    )
+    path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    result = check_project(project)
+
+    assert "manifest does not declare required file: .samsarix/project.json" in result.issues
+    assert "manifest must declare at least one generated file" in result.issues
 
 
 def test_metadata_symlinks_cannot_escape_the_project(tmp_path: Path) -> None:

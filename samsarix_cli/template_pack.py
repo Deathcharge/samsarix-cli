@@ -1,7 +1,9 @@
 """Bounded, non-executing local template packs."""
 
 import hashlib
+import os
 import re
+import stat
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
@@ -10,12 +12,13 @@ METADATA_FILENAME = "samsarix-template.toml"
 TEMPLATE_DIRECTORY = "template"
 MAX_METADATA_BYTES = 64 * 1024
 MAX_TEMPLATE_FILES = 256
+MAX_TEMPLATE_ENTRIES = 1024
 MAX_TEMPLATE_FILE_BYTES = 1024 * 1024
 MAX_TEMPLATE_TOTAL_BYTES = 4 * 1024 * 1024
 
 _PACK_NAME = re.compile(r"^[a-z][a-z0-9-]{0,63}$")
 _PACK_VERSION = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$")
-_TOKEN = re.compile(r"@@[A-Z_]+@@")
+_TOKEN = re.compile(r"@@[^@\r\n]+@@")
 _TOKENS = ("@@PROJECT_NAME@@", "@@MODULE_NAME@@", "@@COMMAND_NAME@@")
 _INVALID_WINDOWS_CHARACTERS = frozenset('<>:"|?*')
 _WINDOWS_RESERVED_NAMES = {
@@ -82,6 +85,19 @@ def _read_bounded(path: Path, limit: int, label: str) -> bytes:
         return path.read_bytes()
     except OSError as exc:
         raise TemplatePackError(f"cannot read {label}: {exc}") from exc
+
+
+def _is_link_like(path: Path, label: str) -> bool:
+    """Detect symbolic links and Windows reparse points without following them."""
+    try:
+        information = path.lstat()
+    except FileNotFoundError:
+        return False
+    except OSError as exc:
+        raise TemplatePackError(f"cannot inspect {label}: {exc}") from exc
+    reparse_flag = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0)
+    file_attributes = getattr(information, "st_file_attributes", 0)
+    return stat.S_ISLNK(information.st_mode) or bool(file_attributes & reparse_flag)
 
 
 def _metadata(path: Path) -> tuple[str, str, str]:
@@ -196,61 +212,84 @@ def _digest(name: str, version: str, description: str, files: list[TemplateFile]
 def load_template_pack(path: Path) -> TemplatePack:
     """Load a local template directory without following links or executing code."""
     requested = path.expanduser()
-    if requested.is_symlink():
-        raise TemplatePackError("template pack root cannot be a symbolic link")
+    if _is_link_like(requested, "template pack root"):
+        raise TemplatePackError("template pack root cannot be a symbolic link or reparse point")
     resolved = requested.resolve(strict=False)
     if not resolved.is_dir():
         raise TemplatePackError(f"template pack directory does not exist: {resolved}")
 
     metadata_path = resolved / METADATA_FILENAME
-    if metadata_path.is_symlink() or not metadata_path.is_file():
+    if _is_link_like(metadata_path, "template metadata") or not metadata_path.is_file():
         raise TemplatePackError(f"template pack must contain a regular {METADATA_FILENAME} file")
     name, version, description = _metadata(metadata_path)
 
     template_root = resolved / TEMPLATE_DIRECTORY
-    if template_root.is_symlink() or not template_root.is_dir():
+    if _is_link_like(template_root, "template directory") or not template_root.is_dir():
         raise TemplatePackError(
             f"template pack must contain a regular {TEMPLATE_DIRECTORY}/ directory"
         )
 
     files: list[TemplateFile] = []
     total_bytes = 0
+    pending = [template_root]
+    entry_count = 0
     try:
-        candidates = sorted(template_root.rglob("*"), key=lambda candidate: candidate.as_posix())
+        while pending:
+            directory = pending.pop()
+            with os.scandir(directory) as entries:
+                for entry in entries:
+                    entry_count += 1
+                    if entry_count > MAX_TEMPLATE_ENTRIES:
+                        raise TemplatePackError(
+                            f"template exceeds the {MAX_TEMPLATE_ENTRIES}-entry safety limit"
+                        )
+                    candidate = Path(entry.path)
+                    relative = candidate.relative_to(template_root).as_posix()
+                    if entry.is_symlink() or _is_link_like(candidate, f"template entry {relative}"):
+                        raise TemplatePackError(
+                            f"template cannot contain symbolic links or reparse points: {relative}"
+                        )
+                    if entry.is_dir(follow_symlinks=False):
+                        pending.append(candidate)
+                        continue
+                    if not entry.is_file(follow_symlinks=False):
+                        raise TemplatePackError(f"template contains a non-regular file: {relative}")
+                    if len(files) >= MAX_TEMPLATE_FILES:
+                        raise TemplatePackError(
+                            f"template exceeds the {MAX_TEMPLATE_FILES}-file safety limit"
+                        )
+                    _validate_source_path(relative)
+                    raw = _read_bounded(
+                        candidate,
+                        MAX_TEMPLATE_FILE_BYTES,
+                        f"template file {relative}",
+                    )
+                    total_bytes += len(raw)
+                    if total_bytes > MAX_TEMPLATE_TOTAL_BYTES:
+                        raise TemplatePackError(
+                            "template files exceed the "
+                            f"{MAX_TEMPLATE_TOTAL_BYTES}-byte total safety limit"
+                        )
+                    try:
+                        content = raw.decode("utf-8")
+                    except UnicodeDecodeError as exc:
+                        raise TemplatePackError(
+                            f"template file is not valid UTF-8 text: {relative}"
+                        ) from exc
+                    content = content.replace("\r\n", "\n").replace("\r", "\n")
+                    unknown = _unknown_token(content)
+                    if unknown is not None:
+                        raise TemplatePackError(
+                            f"template file uses unsupported placeholder {unknown}: {relative}"
+                        )
+                    files.append(TemplateFile(relative, content))
+    except TemplatePackError:
+        raise
     except OSError as exc:
         raise TemplatePackError(f"cannot enumerate template files: {exc}") from exc
-    for candidate in candidates:
-        if candidate.is_symlink():
-            relative = candidate.relative_to(template_root).as_posix()
-            raise TemplatePackError(f"template cannot contain symbolic links: {relative}")
-        if candidate.is_dir():
-            continue
-        if not candidate.is_file():
-            relative = candidate.relative_to(template_root).as_posix()
-            raise TemplatePackError(f"template contains a non-regular file: {relative}")
-        if len(files) >= MAX_TEMPLATE_FILES:
-            raise TemplatePackError(f"template exceeds the {MAX_TEMPLATE_FILES}-file safety limit")
-        relative = candidate.relative_to(template_root).as_posix()
-        _validate_source_path(relative)
-        raw = _read_bounded(candidate, MAX_TEMPLATE_FILE_BYTES, f"template file {relative}")
-        total_bytes += len(raw)
-        if total_bytes > MAX_TEMPLATE_TOTAL_BYTES:
-            raise TemplatePackError(
-                f"template files exceed the {MAX_TEMPLATE_TOTAL_BYTES}-byte total safety limit"
-            )
-        try:
-            content = raw.decode("utf-8")
-        except UnicodeDecodeError as exc:
-            raise TemplatePackError(f"template file is not valid UTF-8 text: {relative}") from exc
-        content = content.replace("\r\n", "\n").replace("\r", "\n")
-        unknown = _unknown_token(content)
-        if unknown is not None:
-            raise TemplatePackError(
-                f"template file uses unsupported placeholder {unknown}: {relative}"
-            )
-        files.append(TemplateFile(relative, content))
 
     if not files:
         raise TemplatePackError("template pack must contain at least one template file")
+    files.sort(key=lambda template_file: template_file.path)
     digest = _digest(name, version, description, files)
     return TemplatePack(description, digest, tuple(files), name, resolved, version)

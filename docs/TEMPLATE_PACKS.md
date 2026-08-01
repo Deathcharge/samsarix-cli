@@ -91,7 +91,7 @@ Samsarix rejects:
 - unknown metadata fields or placeholders;
 - non-UTF-8 and non-regular files;
 - metadata over 64 KiB, individual files over 1 MiB, total content over 4 MiB, more than 256
-  template files, or a rendered manifest over 64 KiB.
+  template files, more than 1,024 total directory entries, or a rendered manifest over 64 KiB.
 
 Line endings are normalized to LF before the pack digest and generated-file hashes are calculated.
 Generation still uses Samsarix's temporary sibling directory and atomic final move, so a failed

@@ -109,11 +109,14 @@ def test_metadata_and_template_directory_are_required(tmp_path: Path) -> None:
 def test_unknown_tokens_are_rejected_in_paths_and_content(tmp_path: Path) -> None:
     content_pack = _pack(tmp_path / "content", {"README.md": "@@SECRET@@"})
     path_pack = _pack(tmp_path / "path", {"@@SECRET@@.txt": "safe"})
+    numbered_pack = _pack(tmp_path / "numbered", {"README.md": "@@SECRET_1@@"})
 
     with pytest.raises(TemplatePackError, match="unsupported placeholder @@SECRET@@"):
         load_template_pack(content_pack)
     with pytest.raises(TemplatePackError, match="unsupported placeholder @@SECRET@@"):
         load_template_pack(path_pack)
+    with pytest.raises(TemplatePackError, match="unsupported placeholder @@SECRET_1@@"):
+        load_template_pack(numbered_pack)
 
 
 def test_template_must_contain_utf8_regular_files(tmp_path: Path) -> None:
@@ -151,6 +154,16 @@ def test_file_size_count_and_total_size_are_bounded(
         load_template_pack(total_pack)
 
 
+def test_directory_enumeration_is_bounded(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    root = _pack(tmp_path, {"README.md": "safe"})
+    for index in range(3):
+        (root / "template" / f"empty-{index}").mkdir()
+    monkeypatch.setattr(template_pack_module, "MAX_TEMPLATE_ENTRIES", 3)
+
+    with pytest.raises(TemplatePackError, match="3-entry safety limit"):
+        load_template_pack(root)
+
+
 def test_links_are_rejected_instead_of_followed(tmp_path: Path) -> None:
     root = _pack(tmp_path)
     external = tmp_path / "outside.txt"
@@ -161,7 +174,10 @@ def test_links_are_rejected_instead_of_followed(tmp_path: Path) -> None:
     except OSError as exc:
         pytest.skip(f"file symlinks are unavailable: {exc}")
 
-    with pytest.raises(TemplatePackError, match="cannot contain symbolic links: link.txt"):
+    with pytest.raises(
+        TemplatePackError,
+        match="cannot contain symbolic links or reparse points: link.txt",
+    ):
         load_template_pack(root)
 
 

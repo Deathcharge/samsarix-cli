@@ -13,6 +13,7 @@ and versions follow Python's PEP 440 representation of semantic release stages.
 - Schema-2 project manifests with template identity, template version, digest, and per-file hashes.
 - Opt-in `samsarix check --strict` generated-content drift reporting.
 - A runnable `team-service` example pack and installed-wheel coverage for the complete pack workflow.
+- Explicit Windows reparse-point rejection and a total directory-entry bound for untrusted packs.
 
 ### Changed
 

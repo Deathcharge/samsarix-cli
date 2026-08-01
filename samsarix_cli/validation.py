@@ -18,6 +18,15 @@ _MAX_GENERATED_FILES = 256
 _MAX_TRACKED_FILES = _MAX_GENERATED_FILES + 1
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _LOCAL_TEMPLATE_NAME = re.compile(r"^[a-z][a-z0-9-]{0,63}$")
+_INVALID_WINDOWS_CHARACTERS = frozenset('<>:"|?*')
+_WINDOWS_RESERVED_NAMES = {
+    "AUX",
+    "CON",
+    "NUL",
+    "PRN",
+    *(f"COM{number}" for number in range(1, 10)),
+    *(f"LPT{number}" for number in range(1, 10)),
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -62,6 +71,16 @@ def _safe_relative_path(value: object) -> PurePosixPath | None:
     relative = PurePosixPath(value)
     if relative.is_absolute() or ".." in relative.parts or "." in relative.parts:
         return None
+    for part in relative.parts:
+        if (
+            part.endswith((" ", "."))
+            or any(
+                character in _INVALID_WINDOWS_CHARACTERS or ord(character) < 32
+                for character in part
+            )
+            or part.split(".", 1)[0].upper() in _WINDOWS_RESERVED_NAMES
+        ):
+            return None
     return relative
 
 
@@ -115,8 +134,16 @@ def _check_files(project: Path, manifest: dict[str, Any], issues: list[str]) -> 
     if len(values) > _MAX_TRACKED_FILES:
         issues.append(f"manifest files exceeds the {_MAX_TRACKED_FILES}-entry safety limit")
         return
-    if len(values) != len(set(value for value in values if isinstance(value, str))):
+    portable_values = [value.casefold() for value in values if isinstance(value, str)]
+    if len(portable_values) != len(set(portable_values)):
         issues.append("manifest files contains duplicate paths")
+
+    declared_paths = {value for value in values if isinstance(value, str)}
+    manifest_relative = _MANIFEST_PATH.as_posix()
+    if manifest_relative not in declared_paths:
+        issues.append(f"manifest does not declare required file: {manifest_relative}")
+    if manifest.get("schema_version") == 2 and declared_paths <= {manifest_relative}:
+        issues.append("manifest must declare at least one generated file")
 
     module_name = manifest.get("module_name")
     template_name = manifest.get("template")
@@ -129,14 +156,12 @@ def _check_files(project: Path, manifest: dict[str, Any], issues: list[str]) -> 
         test_file = "tests/test_config.py" if template_name == "discord" else "tests/test_app.py"
         required_paths = {
             ".gitignore",
-            ".samsarix/project.json",
             "README.md",
             "pyproject.toml",
             f"src/{module_name}/__init__.py",
             f"src/{module_name}/main.py",
             test_file,
         }
-        declared_paths = {value for value in values if isinstance(value, str)}
         for missing_path in sorted(required_paths - declared_paths):
             issues.append(f"manifest does not declare required file: {missing_path}")
 
@@ -178,6 +203,9 @@ def _check_file_hashes(
     if len(hashes) > _MAX_GENERATED_FILES:
         issues.append(f"manifest file_hashes exceeds the {_MAX_GENERATED_FILES}-entry safety limit")
         return
+    portable_hash_paths = [value.casefold() for value in hashes]
+    if len(portable_hash_paths) != len(set(portable_hash_paths)):
+        issues.append("manifest file_hashes contains duplicate paths")
 
     files = manifest.get("files")
     if isinstance(files, list):

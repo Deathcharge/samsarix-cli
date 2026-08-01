@@ -2,7 +2,7 @@
 
 ## Supported scope
 
-The `1.1.x` release-candidate line receives security fixes while it is under evaluation. The initial
+The `1.2.x` release-candidate line receives security fixes while it is under evaluation. The initial
 `1.0.0` code is unsupported because its installed package was incomplete and its operational
 commands were simulations.
 
@@ -26,6 +26,11 @@ argument-vector subprocess with no shell and a bounded timeout.
 The `.samsarix/project.json` manifest is untrusted: reads are size-bounded, paths must be relative POSIX
 paths, traversal and external symlink resolution are rejected, and the file count is capped. The
 check command never executes project code.
+
+Local template packs are also untrusted input. Samsarix accepts only bounded regular UTF-8 files,
+rejects symbolic links and Windows reparse points, caps total directory entries and content, and
+supports three literal substitutions. Inspection, planning, and generation do not fetch or execute
+pack-supplied code. Generated source must still be reviewed before a user installs or runs it.
 
 Generated applications are development starters. Security controls for a public deployment—such as
 authentication, authorization, TLS, request limits, production process management, secret storage,
