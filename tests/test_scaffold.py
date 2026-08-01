@@ -8,7 +8,12 @@ from pathlib import Path
 import pytest
 
 import samsarix_cli.scaffold as scaffold_module
-from samsarix_cli.scaffold import ScaffoldError, scaffold_project, validate_project_name
+from samsarix_cli.scaffold import (
+    ScaffoldError,
+    plan_project,
+    scaffold_project,
+    validate_project_name,
+)
 from samsarix_cli.templates import TEMPLATE_NAMES, render_project
 from samsarix_cli.validation import check_project
 
@@ -29,6 +34,8 @@ def test_every_template_is_complete_valid_toml_and_valid_python(
     assert result.destination == destination.resolve()
     assert result.module_name == f"sample_{template_name}"
     assert result.template_name == template_name
+    assert result.template_kind == "builtin"
+    assert len(result.template_digest) == 64
     assert not result.git_initialized
     assert check_project(destination).is_valid
     assert "helix-collective" not in (destination / "pyproject.toml").read_text(encoding="utf-8")
@@ -55,6 +62,21 @@ def test_project_name_override_controls_distribution_and_module_names(tmp_path: 
     assert result.module_name == "useful_api"
     assert manifest["project_name"] == "Useful_API"
     assert (destination / "src/useful_api/main.py").is_file()
+
+
+def test_plan_does_not_create_destination_or_parent(tmp_path: Path) -> None:
+    destination = tmp_path / "missing-parent" / "planned"
+
+    result = plan_project(
+        destination=destination,
+        project_name=None,
+        template_name="flask",
+        initialize_git=False,
+    )
+
+    assert result.destination == destination.resolve()
+    assert result.template_name == "flask"
+    assert not destination.parent.exists()
 
 
 @pytest.mark.parametrize(

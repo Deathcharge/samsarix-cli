@@ -1,5 +1,6 @@
 """Safe, atomic project generation."""
 
+import hashlib
 import json
 import keyword
 import os
@@ -11,9 +12,11 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from samsarix_cli import __version__
-from samsarix_cli.templates import TEMPLATE_BY_NAME, render_project
+from samsarix_cli.template_pack import TemplatePackError, load_template_pack
+from samsarix_cli.templates import DEFAULT_TEMPLATE, TEMPLATE_BY_NAME, render_project
 
 _PROJECT_NAME = re.compile(r"^[A-Za-z][A-Za-z0-9_-]{0,63}$")
+_MAX_MANIFEST_BYTES = 64 * 1024
 _WINDOWS_RESERVED_NAMES = {
     "AUX",
     "CON",
@@ -37,7 +40,26 @@ class ScaffoldResult:
     git_initialized: bool
     module_name: str
     project_name: str
+    template_digest: str
+    template_kind: str
     template_name: str
+    template_version: str
+
+
+@dataclass(frozen=True, slots=True)
+class ProjectPlan:
+    """A complete generation plan produced without writing to the destination."""
+
+    destination: Path
+    files: tuple[str, ...]
+    git_requested: bool
+    module_name: str
+    project_name: str
+    template_digest: str
+    template_kind: str
+    template_name: str
+    template_version: str
+    _contents: tuple[tuple[str, str], ...]
 
 
 def validate_project_name(project_name: str) -> str:
@@ -85,26 +107,105 @@ def _initialize_git(project: Path) -> None:
         raise ScaffoldError(f"Git initialization failed{suffix}; retry with --no-git.")
 
 
-def scaffold_project(
+def _content_hash(content: str) -> str:
+    return hashlib.sha256(content.encode("utf-8")).hexdigest()
+
+
+def _builtin_digest(template_name: str) -> str:
+    identity = f"samsarix-builtin-template-v1\0{template_name}\0{__version__}"
+    return hashlib.sha256(identity.encode("utf-8")).hexdigest()
+
+
+def plan_project(
     *,
     destination: Path,
     project_name: str | None,
-    template_name: str,
+    template_name: str | None,
+    template_pack: Path | None = None,
     initialize_git: bool,
-) -> ScaffoldResult:
-    """Create a complete project without ever replacing an existing path."""
-    if template_name not in TEMPLATE_BY_NAME:
-        raise ScaffoldError(f"Unknown template: {template_name}")
+) -> ProjectPlan:
+    """Build an exact project plan without creating or changing any path."""
+    if template_name is not None and template_pack is not None:
+        raise ScaffoldError("Choose either --template or --template-pack, not both.")
 
     requested_destination = destination.expanduser()
     selected_name = project_name or requested_destination.name
     module_name = validate_project_name(selected_name)
     resolved_destination = requested_destination.resolve(strict=False)
-
     if resolved_destination.exists() or resolved_destination.is_symlink():
         raise ScaffoldError(f"Destination already exists: {resolved_destination}")
 
-    parent = resolved_destination.parent
+    if template_pack is None:
+        selected_template = template_name or DEFAULT_TEMPLATE
+        if selected_template not in TEMPLATE_BY_NAME:
+            raise ScaffoldError(f"Unknown template: {selected_template}")
+        files = render_project(selected_name, module_name, selected_template)
+        template_kind = "builtin"
+        template_version = __version__
+        template_digest = _builtin_digest(selected_template)
+    else:
+        try:
+            pack = load_template_pack(template_pack)
+            files = pack.render(selected_name, module_name)
+        except TemplatePackError as exc:
+            raise ScaffoldError(str(exc)) from exc
+        selected_template = pack.name
+        template_kind = "local"
+        template_version = pack.version
+        template_digest = pack.digest
+
+    manifest_path = ".samsarix/project.json"
+    file_hashes = {path: _content_hash(content) for path, content in sorted(files.items())}
+    manifest = {
+        "file_hashes": file_hashes,
+        "files": sorted((*files, manifest_path)),
+        "generator": "samsarix-cli",
+        "generator_version": __version__,
+        "module_name": module_name,
+        "project_name": selected_name,
+        "schema_version": 2,
+        "template": selected_template,
+        "template_digest": template_digest,
+        "template_kind": template_kind,
+        "template_version": template_version,
+    }
+    rendered_manifest = json.dumps(manifest, indent=2, sort_keys=True) + "\n"
+    if len(rendered_manifest.encode("utf-8")) > _MAX_MANIFEST_BYTES:
+        raise ScaffoldError(
+            f"Generated manifest exceeds the {_MAX_MANIFEST_BYTES}-byte safety limit."
+        )
+    files[manifest_path] = rendered_manifest
+    return ProjectPlan(
+        destination=resolved_destination,
+        files=tuple(sorted(files)),
+        git_requested=initialize_git,
+        module_name=module_name,
+        project_name=selected_name,
+        template_digest=template_digest,
+        template_kind=template_kind,
+        template_name=selected_template,
+        template_version=template_version,
+        _contents=tuple(sorted(files.items())),
+    )
+
+
+def scaffold_project(
+    *,
+    destination: Path,
+    project_name: str | None,
+    template_name: str | None,
+    template_pack: Path | None = None,
+    initialize_git: bool,
+) -> ScaffoldResult:
+    """Create a complete project without ever replacing an existing path."""
+    plan = plan_project(
+        destination=destination,
+        project_name=project_name,
+        template_name=template_name,
+        template_pack=template_pack,
+        initialize_git=initialize_git,
+    )
+    parent = plan.destination.parent
     try:
         parent.mkdir(parents=True, exist_ok=True)
     except OSError as exc:
@@ -112,29 +213,14 @@ def scaffold_project(
 
     staging: Path | None = None
     try:
-        staging = Path(
-            tempfile.mkdtemp(prefix=f".{resolved_destination.name}.samsarix-", dir=parent)
-        )
-        files = render_project(selected_name, module_name, template_name)
-        manifest_path = ".samsarix/project.json"
-        manifest = {
-            "files": sorted((*files, manifest_path)),
-            "generator": "samsarix-cli",
-            "generator_version": __version__,
-            "module_name": module_name,
-            "project_name": selected_name,
-            "schema_version": 1,
-            "template": template_name,
-        }
-        files[manifest_path] = json.dumps(manifest, indent=2, sort_keys=True) + "\n"
-
-        for relative_path, content in files.items():
+        staging = Path(tempfile.mkdtemp(prefix=f".{plan.destination.name}.samsarix-", dir=parent))
+        for relative_path, content in plan._contents:
             _write_file(staging, relative_path, content)
 
         if initialize_git:
             _initialize_git(staging)
 
-        os.replace(staging, resolved_destination)
+        os.replace(staging, plan.destination)
         staging = None
     except ScaffoldError:
         raise
@@ -145,10 +231,13 @@ def scaffold_project(
             shutil.rmtree(staging, ignore_errors=True)
 
     return ScaffoldResult(
-        destination=resolved_destination,
-        files=tuple(sorted(files)),
+        destination=plan.destination,
+        files=plan.files,
         git_initialized=initialize_git,
-        module_name=module_name,
-        project_name=selected_name,
-        template_name=template_name,
+        module_name=plan.module_name,
+        project_name=plan.project_name,
+        template_digest=plan.template_digest,
+        template_kind=plan.template_kind,
+        template_name=plan.template_name,
+        template_version=plan.template_version,
     )
