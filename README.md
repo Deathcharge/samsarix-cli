@@ -5,9 +5,9 @@ teams that want reviewable Python application starters. It creates a new directo
 reviewed built-ins or a bounded local template pack, previews the exact plan before writing, can
 initialize Git, and records provenance for structural and generated-content checks.
 
-The project is a beta release candidate. The local CLI, distributions, generated FastAPI journey,
-and GitHub-hosted Python 3.11-3.13 CI are verified; public PyPI publication remains an external
-release step.
+Version `1.2.0rc1` is a verified beta release candidate. The local CLI, source and wheel artifacts,
+built-in and team-pack journeys, live generated FastAPI health endpoint, and GitHub-hosted Python
+3.11-3.13 CI are verified; public PyPI publication remains an external release step.
 
 ## What it creates
 
@@ -181,8 +181,8 @@ described in [SECURITY.md](SECURITY.md), or email
 
 ## Distribution and sustainability
 
-The intended distribution name is `samsarix-cli`; both that name and `samsarix` returned no current
-PyPI project record when checked on 2026-07-28. A name is not secured until Samsarix LLC publishes or
+The intended distribution name is `samsarix-cli`; both that name and `samsarix` returned HTTP 404
+from PyPI when checked on 2026-08-01. A name is not secured until Samsarix LLC publishes or
 reserves it, so availability must be checked again immediately before release. No package has been
 published and CI contains no publishing credential or release job.
 
@@ -199,7 +199,7 @@ organization-specific template packs while keeping the core local workflow accou
   should adopt a lock workflow before production deployment.
 - The built-in FastAPI starter and local `team-service` example receive installed end-to-end release
   verification; every built-in receives generation, syntax, metadata, and focused tests.
-- Renaming the legacy GitHub repository path and reserving the PyPI name remain owner-controlled.
+- Reserving or publishing the PyPI name remains owner-controlled.
 
 ## Contributing and contact
 

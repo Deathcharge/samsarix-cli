@@ -1,6 +1,6 @@
 # Productization record
 
-Last updated: 2026-07-28
+Last updated: 2026-08-01
 
 ## Repository assessment
 
@@ -20,16 +20,17 @@ The built package was also structurally broken: `[tool.setuptools] packages = ["
 ## Chosen product and identity
 
 Samsarix CLI is an offline generator for small, independent Python application starters. Its target
-user is a Python developer who wants to create a framework-specific project, understand every file,
-run it locally, and validate the original scaffold without a private platform or account.
+users are developers and small platform teams that want to create a reviewed project baseline,
+understand every file, and validate its provenance without a private platform or account.
 
 The primary journey is:
 
 1. install Samsarix CLI from a reviewed source checkout, tag, or wheel;
-2. inspect `samsarix templates`;
-3. run `samsarix init DESTINATION --template fastapi`;
-4. run `samsarix check DESTINATION`;
-5. install the generated project's development dependencies, run its tests, and start its local
+2. inspect a built-in with `samsarix templates` or a local pack with `samsarix inspect-template`;
+3. review `samsarix plan DESTINATION` in human or JSON form;
+4. run `samsarix init` with a built-in or local pack;
+5. run the structural check and, when appropriate, `samsarix check --strict` for baseline drift;
+6. install the generated project's development dependencies, run its tests, and start its local
    health endpoint.
 
 The 2026-07-28 owner decision moved the brand to Samsarix, identified Samsarix LLC as the company,
@@ -92,6 +93,9 @@ trademark clearance, contributor provenance, or company-specific risk.
 - Initialize a real empty Git repository by default without changing identity, staging, or committing.
 - Store a bounded `.samsarix/project.json` manifest. `samsarix check` validates structure but never
   executes generated code or trusts manifest paths.
+- Accept bounded local UTF-8 template packs while rejecting links/reparse points, traversal,
+  non-portable paths, unknown placeholders, unbounded trees, and reserved generator paths.
+- Provide a read-only exact plan and record template/version/digest plus generated-file hashes.
 - Keep templates in Python source so the wheel has no fragile package-data dependency.
 - Do not generate a license, secret-filled `.env`, cloud assets, or production deployment claims.
 - Do not retain a legacy `helix` executable or import alias: rc1 was unreleased, and a clean break
@@ -130,7 +134,9 @@ No baseline claim is recorded as passing when it did not.
 | P1 | README documented nonexistent behavior | Rewritten around verified behavior |
 | P1 | PyPI identity collided with another publisher | Fixed in source with `samsarix-cli`; external reservation remains |
 | P2 | Generated projects do not receive template updates | Deferred; safe merge semantics need a separate design |
-| P2 | Only FastAPI receives installed/running smoke validation | Deferred; all four receive generation and syntax tests |
+| P2 | Only selected samples receive installed/running smoke validation | Improved with installed `team-service`; all built-ins receive generation and syntax tests |
+| P1 | Pack enumeration could traverse an unbounded empty directory tree | Fixed with a 1,024-entry bound applied during traversal |
+| P1 | Windows junctions could bypass symbolic-link-only checks | Fixed by rejecting filesystem reparse points |
 
 ## Implementation checklist
 
@@ -146,8 +152,10 @@ No baseline claim is recorded as passing when it did not.
 - [x] Apply the Samsarix identity and working company contacts.
 - [x] Replace conflicting terms with Apache-2.0, `NOTICE`, and a brand policy.
 - [x] Obtain green GitHub-hosted Python 3.11-3.13 CI on the pushed branch.
+- [x] Add non-executing local packs, deterministic plans, provenance, and strict drift checks.
+- [x] Add an independently runnable team pack and installed-wheel workflow coverage.
+- [x] Bound total pack traversal and reject symbolic links plus Windows reparse points.
 - [ ] Reserve/publish `samsarix-cli` through an owner-controlled PyPI organization/account.
-- [ ] Rename the legacy GitHub repository if desired and update canonical URLs.
 
 ## Release acceptance criteria
 
@@ -199,15 +207,44 @@ GitHub-hosted CI. The first hosted run passed but warned that the pinned action 
 deprecated Node 20 runtime; the workflow was then updated to the official Node 24-based major
 versions and rerun.
 
+The `1.2.0rc1` team-template candidate was verified on Windows and on GitHub-hosted Linux:
+
+| Command/check | Actual result |
+| --- | --- |
+| `ruff format --check .` / `ruff check .` | exit 0; 18 files formatted; lint passed |
+| Python 3.11 `mypy` | exit 0; no issues in 18 source/test files |
+| `pytest --cov=samsarix_cli --cov-report=term-missing` | exit 0; 71 passed; 91.58% branch coverage |
+| generated `team-service` tests and Ruff checks | exit 0; 1 passed; lint/format passed |
+| generated FastAPI tests and Ruff checks | exit 0; 1 passed; lint/format passed |
+| live generated FastAPI `/health` | HTTP 200; `{"status":"ok"}` |
+| local build and Twine metadata check | rc1 wheel/sdist built; both passed Twine |
+| wheel artifact inspection | runtime package/commands and license files present; tests/examples excluded |
+| sdist artifact inspection | authoring docs, tests, and complete `team-service` pack present |
+| installed-wheel CLI journeys | version/help, inspect, plan, built-in/local init, and strict checks passed |
+| GitHub Actions push and PR runs at `e1350a6` | all Python 3.11-3.13 quality jobs and package jobs passed |
+| hosted installed-wheel team-pack journey | inspect, plan, init, strict check, install, test, lint, format passed |
+| hosted dependency audits | passed on Python 3.11, 3.12, and 3.13 |
+
+The local package index did not respond while creating a new dependency environment, so two local
+pip installation attempts exhausted their 3- and 5-minute command bounds. The local wheel was
+therefore built without isolation for artifact inspection and installed with dependencies from the
+existing Python 3.11 environment. Exact isolated builds, dependency resolution, audits, and a fresh
+generated-project install passed in the GitHub package/quality jobs; the local index timeouts are not
+counted as passing checks.
+
+An app-backed Codex Security workspace also failed during launcher setup. A manual repository pass
+covered the template/manifest trust boundaries and found the unbounded-tree, junction, and
+placeholder-contract hardening addressed in this release, but no app-generated security report is
+claimed.
+
 ## Known risks and deferred work
 
 1. **Name control (P1):** a PyPI 404 is evidence of current availability, not ownership; Samsarix LLC
    must reserve or publish the distribution before another party does.
-2. **Canonical repository identity (P2):** the remote URL still contains `helix-cli` and the GitHub
-   owner is `Deathcharge`; the owner may rename/transfer it and then update package URLs.
-3. **Framework depth (P2):** expand installed smoke checks beyond FastAPI as maintenance value grows.
-4. **Template evolution (P2):** design explicit diff/merge semantics before offering upgrades.
-5. **Legal review (owner-controlled):** counsel should confirm title/provenance and desired trademark
+2. **Framework depth (P2):** expand installed smoke checks across all built-ins as maintenance value
+   grows.
+3. **Template evolution (P2):** design explicit diff/merge semantics before offering upgrades.
+4. **Legal review (owner-controlled):** counsel should confirm title/provenance and desired trademark
    protection before a major commercial launch. This does not block an honest Apache-2.0 release.
 
 Framework dependency ranges are bounded but not locked in generated projects. Owners need a lock and
@@ -227,7 +264,7 @@ reviewed template maintenance are plausible without making the open core account
 
 ## Release disposition
 
-**Release candidate with one publication gate.** The local product has no known actionable P0, and
-hosted multi-version quality/package CI passes. The remaining release gate is owner-controlled PyPI
-name reservation/publication. A GitHub repository rename and formal legal/trademark review are useful
-owner actions but do not require more local product code.
+**Verified release candidate with one publication gate.** The product has no known actionable P0,
+and exact-head hosted multi-version quality/package CI passes. The remaining distribution gate is
+owner-controlled PyPI name reservation/publication. Formal legal/trademark review remains prudent
+before a major commercial launch but does not require more local product code.

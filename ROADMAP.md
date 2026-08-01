@@ -7,9 +7,9 @@ This roadmap separates four gates: merge, release, publication, and flagship ado
 Portfolio role: **standalone product candidate**. Develop this as a focused standalone product with its own distribution and support boundary. Integrate with the flagship through versioned contracts, not shared private source.
 Planned repository identity: `Deathcharge/samsarix-cli` (ready).
 
-Current disposition: the productization and repository-coordinate pull requests are merged. The next
-release slice will prove a differentiated team workflow before package publication; release and
-flagship adoption remain separate decisions.
+Current disposition: the productization and repository-coordinate pull requests are merged. The
+reviewable team-template slice is implemented and verified for `1.2.0rc1`; package publication and
+flagship adoption remain separate owner decisions.
 
 ## Competitive product thesis
 
@@ -69,13 +69,14 @@ standards without operating a portal or executing template-supplied code.
 
 ### Acceptance evidence
 
-- Human and JSON contract tests for inspection and planning.
-- Adversarial template-pack tests for traversal, links, encoding, bounds, collisions, and tokens.
-- Compatibility tests for old manifests plus strict drift tests for new manifests.
-- Installed-wheel smoke for built-in and local-pack generation.
-- Generated sample installs, tests, lints, and runs where applicable.
-- Exact-head Python 3.11-3.13 CI, artifact checks, dependency audit, and rollback path recorded in the
-  pull request.
+- [x] Human and JSON contract tests for inspection and planning.
+- [x] Adversarial template-pack tests for traversal, links/reparse points, encoding, bounds,
+  collisions, and tokens.
+- [x] Compatibility tests for old manifests plus strict drift tests for new manifests.
+- [x] Installed-wheel smoke for built-in and local-pack generation.
+- [x] Generated sample install, test, lint, format, and live endpoint evidence where applicable.
+- [x] Exact-head Python 3.11-3.13 CI, artifact checks, dependency audit, and rollback path recorded in
+  the pull request.
 
 ## Stabilize the productized default
 
