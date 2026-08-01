@@ -37,11 +37,11 @@ or dependencies declared by a generated project.
 
 ## Install from source
 
-The GitHub repository still uses its pre-rebrand path:
+Clone the canonical repository:
 
 ```bash
 git clone https://github.com/Deathcharge/samsarix-cli.git
-cd helix-cli
+cd samsarix-cli
 python -m venv .venv
 ```
 
