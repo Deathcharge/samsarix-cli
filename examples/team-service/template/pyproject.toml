@@ -17,7 +17,7 @@ dev = [
 ]
 
 [project.scripts]
-@@COMMAND_NAME@@ = "@@MODULE_NAME@@.main:main"
+"@@COMMAND_NAME@@" = "@@MODULE_NAME@@.main:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

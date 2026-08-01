@@ -1,6 +1,7 @@
 """Executable evidence that the published example pack remains usable."""
 
 import json
+import tomllib
 from pathlib import Path
 
 from samsarix_cli.scaffold import plan_project, scaffold_project
@@ -15,7 +16,7 @@ def test_team_service_example_is_inspectable_and_deterministic(tmp_path: Path) -
     second = load_template_pack(_EXAMPLE_PACK)
 
     assert first.name == "team-service"
-    assert first.version == "1.0.0"
+    assert first.version == "1.0.1"
     assert first.digest == second.digest
     assert tuple(template_file.path for template_file in first.files) == (
         ".github/workflows/ci.yml",
@@ -55,10 +56,18 @@ def test_team_service_example_generates_valid_python_project(tmp_path: Path) -> 
 
     manifest = json.loads((destination / ".samsarix/project.json").read_text(encoding="utf-8"))
     assert manifest["template_digest"] == result.template_digest
-    assert manifest["template_version"] == "1.0.0"
+    assert manifest["template_version"] == "1.0.1"
     assert manifest["schema_version"] == 2
 
     python_files = list(destination.rglob("*.py"))
     assert python_files
     for python_file in python_files:
         compile(python_file.read_text(encoding="utf-8"), str(python_file), "exec")
+
+
+def test_team_service_source_pyproject_is_valid_before_rendering() -> None:
+    pyproject = tomllib.loads(
+        (_EXAMPLE_PACK / "template/pyproject.toml").read_text(encoding="utf-8")
+    )
+
+    assert pyproject["project"]["scripts"] == {"@@COMMAND_NAME@@": "@@MODULE_NAME@@.main:main"}
