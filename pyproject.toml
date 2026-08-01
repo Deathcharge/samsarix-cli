@@ -72,6 +72,7 @@ show_missing = true
 skip_covered = true
 
 [tool.ruff]
+extend-exclude = ["examples/*/template"]
 line-length = 100
 target-version = "py311"
 

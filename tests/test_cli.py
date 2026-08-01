@@ -142,9 +142,14 @@ def test_inspect_and_initialize_local_template_pack() -> None:
     with runner.isolated_filesystem():
         pack = _template_pack(Path.cwd())
         inspected = runner.invoke(cli, ["inspect-template", str(pack), "--json"])
+        inspected_human = runner.invoke(cli, ["inspect-template", str(pack)])
         planned = runner.invoke(
             cli,
             ["plan", "team-api", "--template-pack", str(pack), "--no-git", "--json"],
+        )
+        planned_human = runner.invoke(
+            cli,
+            ["plan", "team-api", "--template-pack", str(pack), "--no-git"],
         )
         assert planned.exit_code == 0
         assert not Path("team-api").exists()
@@ -159,6 +164,12 @@ def test_inspect_and_initialize_local_template_pack() -> None:
         assert inspection["name"] == "team-service"
         assert inspection["version"] == "2026.08"
         assert len(inspection["digest"]) == 64
+        assert inspected_human.exit_code == 0
+        assert "Template: team-service 2026.08" in inspected_human.output
+        assert "src/@@MODULE_NAME@@/__init__.py" in inspected_human.output
+        assert planned_human.exit_code == 0
+        assert "Project: team-api (team_api)" in planned_human.output
+        assert "Git: skip" in planned_human.output
         assert initialized.exit_code == 0
         assert "team-service local template" in initialized.output
         assert (Path("team-api") / "src/team_api/__init__.py").is_file()
@@ -186,3 +197,23 @@ def test_template_and_template_pack_are_mutually_exclusive() -> None:
         assert result.exit_code == 1
         assert "Choose either --template or --template-pack" in result.output
         assert not Path("demo").exists()
+
+
+def test_template_command_errors_are_concise_and_non_destructive() -> None:
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        invalid_pack = Path("invalid-pack")
+        invalid_pack.mkdir()
+        inspected = runner.invoke(cli, ["inspect-template", str(invalid_pack)])
+
+        destination = Path("existing")
+        destination.mkdir()
+        planned = runner.invoke(cli, ["plan", str(destination)])
+
+        assert inspected.exit_code == 1
+        assert "must contain a regular samsarix-template.toml file" in inspected.output
+        assert "Traceback" not in inspected.output
+        assert planned.exit_code == 1
+        assert "Destination already exists" in planned.output
+        assert "Traceback" not in planned.output
+        assert not list(destination.iterdir())

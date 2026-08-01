@@ -127,7 +127,7 @@ def _metadata(path: Path) -> tuple[str, str, str]:
 def _unknown_token(value: str) -> str | None:
     for match in _TOKEN.findall(value):
         if match not in _TOKENS:
-            return match
+            return str(match)
     return None
 
 
