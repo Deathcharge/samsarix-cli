@@ -1,6 +1,6 @@
 # Productization record
 
-Last updated: 2026-08-01
+Last updated: 2026-08-10
 
 ## Repository assessment
 
@@ -155,6 +155,9 @@ No baseline claim is recorded as passing when it did not.
 - [x] Add non-executing local packs, deterministic plans, provenance, and strict drift checks.
 - [x] Add an independently runnable team pack and installed-wheel workflow coverage.
 - [x] Bound total pack traversal and reject symbolic links plus Windows reparse points.
+- [x] Add immutable-tag GitHub releases with checksums and build-provenance attestations.
+- [x] Add tokenless PyPI trusted-publishing automation without storing a long-lived credential.
+- [x] Add dependency updates, structured contribution intake, DCO guidance, and citation metadata.
 - [ ] Reserve/publish `samsarix-cli` through an owner-controlled PyPI organization/account.
 
 ## Release acceptance criteria
@@ -232,6 +235,14 @@ existing Python 3.11 environment. Exact isolated builds, dependency resolution, 
 generated-project install passed in the GitHub package/quality jobs; the local index timeouts are not
 counted as passing checks.
 
+The 2026-08-10 release-readiness pass validated all three workflow files with actionlint 1.7.12 and
+validated `CITATION.cff` against the Citation File Format schema. On Python 3.11.9, Ruff formatting
+and lint, strict mypy, and all 77 tests passed with 92.20% branch coverage. A new isolated environment
+resolved directly from PyPI, reported no known dependency vulnerabilities, built the wheel and sdist
+from isolated environments, passed Twine metadata checks, and reported version `1.2.0rc1`. The
+machine-wide Python environment contained unrelated editable Samsarix/Helix projects and vulnerable
+packages, so its broad audit was not treated as repository evidence.
+
 An app-backed Codex Security workspace also failed during launcher setup. A manual repository pass
 covered the template/manifest trust boundaries and found the unbounded-tree, junction, and
 placeholder-contract hardening addressed in this release, but no app-generated security report is
@@ -239,8 +250,9 @@ claimed.
 
 ## Known risks and deferred work
 
-1. **Name control (P1):** a PyPI 404 is evidence of current availability, not ownership; Samsarix LLC
-   must reserve or publish the distribution before another party does.
+1. **Name control (P1):** a PyPI 404 on 2026-08-10 is evidence of current availability, not ownership;
+   Samsarix LLC must authenticate to PyPI, register the pending trusted publisher, and publish the
+   distribution before another party does.
 2. **Framework depth (P2):** expand installed smoke checks across all built-ins as maintenance value
    grows.
 3. **Template evolution (P2):** design explicit diff/merge semantics before offering upgrades.
@@ -264,7 +276,8 @@ reviewed template maintenance are plausible without making the open core account
 
 ## Release disposition
 
-**Verified release candidate with one publication gate.** The product has no known actionable P0,
-and exact-head hosted multi-version quality/package CI passes. The remaining distribution gate is
-owner-controlled PyPI name reservation/publication. Formal legal/trademark review remains prudent
-before a major commercial launch but does not require more local product code.
+**Verified release candidate with one external publication gate.** The product has no known
+actionable P0, exact-head hosted multi-version quality/package CI passes, and release/community
+automation is present. The remaining distribution gate is PyPI account authentication plus pending
+trusted-publisher registration. Formal legal/trademark review remains prudent before a major
+commercial launch but does not require more local product code.

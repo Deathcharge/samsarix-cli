@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use Samsarix CLI, please cite the software using this metadata."
+title: Samsarix CLI
+type: software
+authors:
+  - name: Samsarix LLC
+version: 1.2.0rc1
+date-released: "2026-08-10"
+repository-code: "https://github.com/Deathcharge/samsarix-cli"
+url: "https://github.com/Deathcharge/samsarix-cli"
+license: Apache-2.0
+keywords:
+  - code generation
+  - project scaffolding
+  - Python
+  - template provenance

@@ -1,0 +1,80 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+concurrency:
+  group: release-${{ github.ref }}
+
+permissions: {}
+
+jobs:
+  github-release:
+    if: github.repository == 'Deathcharge/samsarix-cli'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      attestations: write
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Validate release tag
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          python - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          tag = os.environ["RELEASE_TAG"]
+          source = Path("samsarix_cli/__init__.py").read_text(encoding="utf-8")
+          match = re.search(r'^__version__ = "([^"]+)"$', source, re.MULTILINE)
+          if match is None:
+              raise SystemExit("could not read package version")
+          expected = f"v{match.group(1)}"
+          if tag != expected:
+              raise SystemExit(f"tag {tag!r} does not match {expected!r}")
+          PY
+      - name: Build distributions
+        run: |
+          python -m pip install --upgrade pip "setuptools>=83,<84"
+          python -m pip install "build>=1.2,<2" "twine>=6,<7"
+          python -m build
+          python -m twine check dist/*
+      - name: Exercise release wheel
+        run: |
+          python -m venv .release-venv
+          .release-venv/bin/python -m pip install dist/*.whl
+          .release-venv/bin/samsarix --version
+          .release-venv/bin/samsarix init "$RUNNER_TEMP/samsarix-release-smoke" --no-git
+          .release-venv/bin/samsarix check "$RUNNER_TEMP/samsarix-release-smoke" --strict
+      - name: Create checksums
+        working-directory: dist
+        run: sha256sum *.whl *.tar.gz > SHA256SUMS
+      - name: Attest release artifacts
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: dist/*
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          prerelease=()
+          if [[ "$RELEASE_TAG" =~ (a|b|rc)[0-9]+$ ]]; then
+            prerelease+=(--prerelease)
+          fi
+          gh release create "$RELEASE_TAG" dist/* \
+            --generate-notes \
+            --title "Samsarix CLI ${RELEASE_TAG#v}" \
+            --verify-tag \
+            "${prerelease[@]}"
