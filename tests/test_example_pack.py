@@ -1,6 +1,7 @@
 """Executable evidence that the published example pack remains usable."""
 
 import json
+import re
 import tomllib
 from pathlib import Path
 
@@ -9,6 +10,16 @@ from samsarix_cli.template_pack import load_template_pack
 from samsarix_cli.validation import check_project
 
 _EXAMPLE_PACK = Path(__file__).parents[1] / "examples" / "team-service"
+_REPOSITORY_ROOT = Path(__file__).parents[1]
+_ACTION_REFERENCE = re.compile(r"^\s*-\s+uses:\s+([^@\s]+)@([^\s#]+)", re.MULTILINE)
+
+
+def _workflow_action_references(path: Path) -> dict[str, str]:
+    content = path.read_text(encoding="utf-8")
+    references = dict(_ACTION_REFERENCE.findall(content))
+    assert references
+    assert all(re.fullmatch(r"[0-9a-f]{40}", reference) for reference in references.values())
+    return references
 
 
 def test_team_service_example_is_inspectable_and_deterministic(tmp_path: Path) -> None:
@@ -71,3 +82,18 @@ def test_team_service_source_pyproject_is_valid_before_rendering() -> None:
     )
 
     assert pyproject["project"]["scripts"] == {"@@COMMAND_NAME@@": "@@MODULE_NAME@@.main:main"}
+
+
+def test_team_service_workflow_uses_current_pinned_actions() -> None:
+    repository_references: dict[str, str] = {}
+    for workflow in (_REPOSITORY_ROOT / ".github/workflows").glob("*.yml"):
+        for action, reference in _workflow_action_references(workflow).items():
+            existing = repository_references.setdefault(action, reference)
+            assert existing == reference
+
+    template_references = _workflow_action_references(
+        _EXAMPLE_PACK / "template/.github/workflows/ci.yml"
+    )
+    assert template_references
+    for action, reference in template_references.items():
+        assert repository_references[action] == reference

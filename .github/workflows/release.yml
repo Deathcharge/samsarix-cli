@@ -10,8 +10,28 @@ concurrency:
 permissions: {}
 
 jobs:
+  release-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+    steps:
+      - name: Require successful default-branch CI for this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ github.sha }}
+        run: |
+          successful_runs="$(gh api \
+            "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?branch=master&event=push&head_sha=$RELEASE_SHA&status=success&per_page=1" \
+            --jq '.total_count')"
+          if [[ "$successful_runs" -lt 1 ]]; then
+            echo "No successful master CI run found for $RELEASE_SHA" >&2
+            exit 1
+          fi
+
   github-release:
     if: github.repository == 'Deathcharge/samsarix-cli'
+    needs: release-gate
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -25,7 +45,6 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.11"
-          cache: pip
       - name: Validate release tag
         env:
           RELEASE_TAG: ${{ github.ref_name }}
