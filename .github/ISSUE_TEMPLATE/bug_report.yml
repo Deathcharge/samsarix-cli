@@ -1,0 +1,59 @@
+name: Bug report
+description: Report reproducible incorrect behavior in Samsarix CLI.
+title: "bug: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve Samsarix CLI. Do not include secrets or undisclosed
+        vulnerabilities here; use the repository's private security reporting instead.
+  - type: input
+    id: version
+    attributes:
+      label: Samsarix CLI version
+      description: Paste the output of `samsarix --version`.
+      placeholder: samsarix, version 1.2.0rc1
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Include the operating system, Python version, and installation source.
+      placeholder: Windows 11, Python 3.12, GitHub release wheel
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Give the smallest complete sequence that reproduces the problem.
+      placeholder: |
+        1. Run ...
+        2. Inspect ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior and safe output
+      description: Redact credentials, private paths, and sensitive project contents.
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission checks
+      options:
+        - label: I searched existing issues for this problem.
+          required: true
+        - label: This report does not disclose a security vulnerability or secret.
+          required: true

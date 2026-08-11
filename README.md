@@ -7,7 +7,9 @@ initialize Git, and records provenance for structural and generated-content chec
 
 Version `1.2.0rc1` is a verified beta release candidate. The local CLI, source and wheel artifacts,
 built-in and team-pack journeys, live-generated FastAPI health endpoint, and GitHub-hosted Python
-3.11-3.13 CI are verified; public PyPI publication remains an external release step.
+3.11-3.13 CI are verified. Tagged artifacts, checksums, and build provenance are published through
+[GitHub Releases](https://github.com/Deathcharge/samsarix-cli/releases); PyPI publication remains a
+separate owner-authenticated step.
 
 ## What it creates
 
@@ -70,8 +72,13 @@ python -m pip install .
 samsarix --version
 ```
 
-The `samsarix-cli` distribution is not yet published on PyPI. Until an official release is linked
-from this repository, install from a reviewed source tag rather than a similarly named package.
+The `samsarix-cli` distribution is not yet published on PyPI. Install from an official GitHub release
+or a reviewed source tag rather than a similarly named package. Release assets include
+`SHA256SUMS`, and their build provenance can be checked with:
+
+```bash
+gh attestation verify samsarix_cli-*.whl --repo Deathcharge/samsarix-cli
+```
 
 ## Quick start
 
@@ -151,7 +158,8 @@ python -m twine check dist/*
 
 CI runs those checks on Python 3.11, 3.12, and 3.13, builds a wheel and source archive, validates
 their metadata, installs the wheel into a fresh environment, and exercises `init` and `check` through
-the installed command.
+the installed command. See [RELEASING.md](RELEASING.md) for the immutable-tag release and optional
+PyPI trusted-publishing process.
 
 ## Architecture
 
@@ -182,9 +190,10 @@ described in [SECURITY.md](SECURITY.md), or email
 ## Distribution and sustainability
 
 The intended distribution name is `samsarix-cli`; both that name and `samsarix` returned HTTP 404
-from PyPI when checked on 2026-08-01. A name is not secured until Samsarix LLC publishes or
-reserves it, so availability must be checked again immediately before release. No package has been
-published and CI contains no publishing credential or release job.
+from PyPI when checked on 2026-08-10. A name is not secured until Samsarix LLC publishes it. The
+repository contains a manual OpenID Connect publishing workflow, but the first upload still requires
+a Samsarix LLC-controlled PyPI account to register the matching pending trusted publisher. No
+long-lived PyPI credential is stored in GitHub.
 
 The CLI has no hosted operating cost. A plausible sustainability path is paid support and maintained
 organization-specific template packs while keeping the core local workflow account-free.
@@ -199,11 +208,12 @@ organization-specific template packs while keeping the core local workflow accou
   should adopt a lock workflow before production deployment.
 - The built-in FastAPI starter and local `team-service` example receive installed end-to-end release
   verification; every built-in receives generation, syntax, metadata, and focused tests.
-- Reserving or publishing the PyPI name remains owner-controlled.
+- Publishing the PyPI name requires an authenticated PyPI account and remains owner-controlled.
 
 ## Contributing and contact
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the local workflow and
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the local workflow and contributor sign-off,
+[SUPPORT.md](SUPPORT.md) for support paths, and
 [docs/PRODUCTIZATION.md](docs/PRODUCTIZATION.md) for the audit, decisions, verification evidence, and
 remaining priorities. General inquiries can be sent to
 [contact@samsarix.com](mailto:contact@samsarix.com); support and security reports can be sent to
@@ -214,4 +224,5 @@ remaining priorities. General inquiries can be sent to
 Copyright 2026 Samsarix LLC. Licensed under the [Apache License 2.0](LICENSE). Redistributions must
 preserve the license and applicable attribution notices, including [NOTICE](NOTICE). The license does
 not grant rights to use Samsarix brand identifiers to imply sponsorship or endorsement; see
-[TRADEMARKS.md](TRADEMARKS.md).
+[TRADEMARKS.md](TRADEMARKS.md). GitHub exposes the preferred software citation from
+[CITATION.cff](CITATION.cff).

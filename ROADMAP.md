@@ -8,8 +8,9 @@ Portfolio role: **standalone product candidate**. Develop this as a focused stan
 Planned repository identity: `Deathcharge/samsarix-cli` (ready).
 
 Current disposition: the productization and repository-coordinate pull requests are merged. The
-reviewable team-template slice is implemented and verified for `1.2.0rc1`; package publication and
-flagship adoption remain separate owner decisions.
+reviewable team-template slice is implemented and verified for `1.2.0rc1`. Immutable tagged GitHub
+releases, checksums, attestations, dependency updates, and community intake are automated; PyPI
+publication and flagship adoption remain separate owner-controlled decisions.
 
 ## Competitive product thesis
 
@@ -84,6 +85,7 @@ standards without operating a portal or executing template-supplied code.
 - Keep Samsarix LLC branding, package identity, license metadata, and compatibility aliases internally consistent.
 - Preserve the pre-productization default under a rollback ref before merging; do not delete legacy history.
 - Review priority: review branch plus owner approval of name and Apache license before tagged wheel publication.
+- Require reviewed pull requests and exact CI checks on the default branch after release automation lands.
 
 ## Later release candidates
 

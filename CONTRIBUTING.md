@@ -50,3 +50,14 @@ Use a disposable destination; `samsarix init` intentionally refuses to overwrite
 - Contributions are accepted under Apache-2.0 as described in section 5 of the license.
 - Do not change licensing, ownership, or publication identity without an explicit Samsarix LLC
   decision.
+
+## Developer sign-off
+
+Every commit must include a `Signed-off-by: Name <email>` trailer. Add it with `git commit -s` or
+`git commit --amend -s`. The sign-off certifies the
+[Developer Certificate of Origin 1.1](https://developercertificate.org/): you have the right to
+submit the contribution under this repository's license and understand that the contribution and
+sign-off are public records.
+
+The DCO is not a copyright assignment or contributor license agreement. Contributors keep their
+copyright while licensing accepted contributions under Apache-2.0.

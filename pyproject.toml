@@ -48,8 +48,12 @@ dev = [
 samsarix = "samsarix_cli.main:cli"
 
 [project.urls]
+Homepage = "https://www.samsarix.com"
 Repository = "https://github.com/Deathcharge/samsarix-cli"
 Issues = "https://github.com/Deathcharge/samsarix-cli/issues"
+Documentation = "https://github.com/Deathcharge/samsarix-cli/tree/master/docs"
+Changelog = "https://github.com/Deathcharge/samsarix-cli/blob/master/CHANGELOG.md"
+Security = "https://github.com/Deathcharge/samsarix-cli/security/policy"
 
 [tool.setuptools.dynamic]
 version = {attr = "samsarix_cli.__version__"}
